@@ -1,0 +1,12 @@
+.product-price-sale {
+    display: flex;
+    flex-direction: column;
+    color: rgb(250, 250, 250);
+    font-size: 14px;
+  }
+  
+  @media (max-width: 992px) {
+    .product-price-sale {
+      font-size: 10px;
+    }
+  }
