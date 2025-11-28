@@ -9,7 +9,7 @@ services:
       - NODE_ENV=production
       - VIRTUAL_HOST=tereasticks.ru # домен сайта
       - LETSENCRYPT_HOST=tereasticks.ru # домен для SSL
-      - LETSENCRYPT_EMAIL=qwe@email.com
+      - LETSENCRYPT_EMAIL=qwe@gmail.com
     networks:
       - web
     volumes:
