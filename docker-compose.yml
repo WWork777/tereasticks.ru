@@ -7,9 +7,10 @@ services:
     restart: always
     environment:
       - NODE_ENV=production
-      - VIRTUAL_HOST=tereasticks.ru # домен сайта
-      - LETSENCRYPT_HOST=tereasticks.ru # домен для SSL
-      - LETSENCRYPT_EMAIL=qwe@gmail.com
+      - VIRTUAL_HOST=tereasticks.ru,www.tereasticks.ru
+      - LETSENCRYPT_HOST=tereasticks.ru,www.tereasticks.ru
+      - LETSENCRYPT_EMAIL=parsh@gmail.com
+      - REDIRECT_www.tereasticks.ru=tereasticks.ru
     networks:
       - web
     volumes:
