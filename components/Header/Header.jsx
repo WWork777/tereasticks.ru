@@ -125,7 +125,7 @@ export default function Header() {
 
           <div className="contacts-container">
             <div className="icons">
-              <a href="https://t.me/+tXZ1x8yraKUzNWEy">
+              <a href="https://t.me/Ilumastore2025">
                 <svg
                   className="head-tg"
                   xmlns="http://www.w3.org/2000/svg"
@@ -261,7 +261,7 @@ export default function Header() {
             <div className="footer-contacts">
               <div className="contacts-container">
                 <div className="icons">
-                  <a href="https://t.me/+tXZ1x8yraKUzNWEy">
+                  <a href="https://t.me/Ilumastore2025">
                     <svg
                       className="head-tg"
                       xmlns="http://www.w3.org/2000/svg"
