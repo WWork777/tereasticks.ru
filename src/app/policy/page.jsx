@@ -10,7 +10,7 @@ export default function Policy() {
         </div>
       </div>
 
-      <div class="container">
+      <div class="container" style={{color:"#fff"}}>
         <p class="last-update">Последнее обновление: 10 ноября 2023 г.</p>
 
         <h2>1. Общие положения</h2>
