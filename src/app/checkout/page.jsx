@@ -76,10 +76,16 @@ const CheckoutPage = () => {
     const { name, value } = e.target;
 
     let isValid = true;
-    if (name === "lastName" || name === "city") {
-      isValid = /^[а-яА-ЯёЁ\s-]*$/.test(value);
+    if (name === "lastName") {
+      isValid = /^[a-zA-Zа-яА-ЯёЁ0-9\s-]*$/.test(value);
+    }
+    else if (name === "city") {
+      isValid = /^[а-яА-ЯёЁ0-9\s-]*$/.test(value);
     } else if (name === "streetAddress") {
       isValid = /^[а-яА-ЯёЁ0-9\s-]*$/.test(value);
+    } else if (name === "telegram") {
+      // Разрешаем латиницу, цифры, нижние подчеркивания и символ @ в начале
+      isValid = /^[@a-zA-Z0-9_]*$/.test(value);
     }
 
     if (isValid) {
