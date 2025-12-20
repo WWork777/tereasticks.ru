@@ -709,8 +709,10 @@ ${formattedCart}
   return (
     <div className="checkout-page">
       <div className="checkout-form">
-        <h1>Оформление заказа</h1>
-        <h5 style={{color:"#fff"}}>Укажите Ваш номер в WhatsApp или Telegram ник для связи</h5>
+        <div className="plitka">
+          <h1>Оформление заказа</h1>
+          <h5 style={{color:"#fff"}}>Укажите Ваш номер в WhatsApp или Telegram ник для связи</h5>
+        </div>
         <form onSubmit={handleSubmit} ref={formRef}>
           <div className="checkout-name">
             <h4>Контактные данные</h4>
@@ -861,10 +863,11 @@ ${formattedCart}
                 }}
               >
                 <input
+                className="privacy-input"
                   type="checkbox"
                   checked={formData.privacyConsent}
                   onChange={handleConsentChange}
-                  style={{ width: "auto" }}
+                  // style={{ width: "auto" }}
                 />
 
                 <Link
