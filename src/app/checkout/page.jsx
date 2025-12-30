@@ -7,7 +7,7 @@ import PhoneInput from "react-phone-input-2";
 import Link from "next/link";
 
 const CheckoutPage = () => {
-  const [selectedMethod, setSelectedMethod] = useState("pickup");
+  const [selectedMethod, setSelectedMethod] = useState("delivery");
   const [loading, setLoading] = useState(false);
   const {
     cartItems,
@@ -40,27 +40,53 @@ const CheckoutPage = () => {
 
   const [errors, setErrors] = useState({});
 
+  const scroolTo = (element) => {
+    if (element) {
+      element.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center'
+      });
+      element.focus();
+    }
+  }
+
   const validateForm = () => {
     const newErrors = {};
+    let elements;
+    let element;
 
-    if (!formData.lastName.trim()) {
-      newErrors.lastName = "Введите имя";
+    if (selectedMethod === "delivery") {
+
+      if (!formData.streetAddress.trim()) {
+        element = document.querySelector(`[placeholder="Номер дома и название улицы"]`);
+        scroolTo(element)
+        newErrors.streetAddress = "Введите адрес";
+      }
+
+      if (!formData.city.trim()) {
+        element = document.querySelector(`[placeholder="Город"]`);
+        scroolTo(element)
+        newErrors.city = "Введите город";
+      }
     }
 
     if (!formData.phoneNumber) {
+      element = document.querySelector(`[placeholder="Введите номер телефона"]`);
+      scroolTo(element)
       newErrors.phoneNumber = "Введите номер телефона";
     } else if (formData.phoneNumber.replace(/\D/g, "").length < 11) {
+      element = document.querySelector(`[placeholder="Введите номер телефона"]`);
+      scroolTo(element)
       newErrors.phoneNumber = "Некорректный номер телефона";
     }
 
-    if (selectedMethod === "delivery") {
-      if (!formData.city.trim()) {
-        newErrors.city = "Введите город";
+    if (!formData.lastName.trim()) {
+      elements = document.getElementsByName('lastName');
+      if (elements.length > 0) {
+        element = elements[0];
+        scroolTo(element)
       }
-
-      if (!formData.streetAddress.trim()) {
-        newErrors.streetAddress = "Введите адрес";
-      }
+      newErrors.lastName = "Введите имя";
     }
 
     if (!formData.privacyConsent) {
@@ -753,12 +779,28 @@ ${formattedCart}
           <div className="checkout-delivery">
             <h4>Способ доставки</h4>
             <div className="checkout-delivery-method">
-              <button
+              {/* <button
                 type="button"
                 className={selectedMethod === "pickup" ? "active" : ""}
                 onClick={() => setSelectedMethod("pickup")}
               >
                 Самовывоз
+              </button> */}
+              <button
+                type="button"
+                className={selectedMethod === "pickup" ? "active" : ""}
+                onClick={() => setSelectedMethod("pickup")}
+                disabled={true}
+                style={{
+                  opacity: 0.5,
+                  cursor: "not-allowed",
+                }}
+              >
+                Самовывоз
+                <br />
+                <span style={{ fontSize: "14px", color: "rgb(198, 58, 58)" }}>
+                  Недоступен
+                </span>
               </button>
               {onlyPacksAndBlocks && totalQuantity < 10 && !hasBlock ? (
                 <button type="button" className={selectedMethod} disabled>
