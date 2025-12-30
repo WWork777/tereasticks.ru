@@ -23,6 +23,7 @@ const CheckoutPage = () => {
   const [formData, setFormData] = useState({
     lastName: "",
     phoneNumber: "",
+    telegram: "",
     city: "",
     streetAddress: "",
     privacyConsent: false,
@@ -87,6 +88,13 @@ const CheckoutPage = () => {
         scroolTo(element)
       }
       newErrors.lastName = "Введите имя";
+    }
+
+    if (
+      formData.telegram.trim() &&
+      !/^[@a-zA-Z0-9_]{5,32}$/.test(formData.telegram.replace(/^@/, ""))
+    ) {
+      newErrors.telegram = "Некорректный формат Telegram username";
     }
 
     if (!formData.privacyConsent) {
@@ -752,6 +760,19 @@ ${formattedCart}
             {errors.lastName && (
               <p className="error" style={{ color: "red" }}>
                 {errors.lastName}
+              </p>
+            )}
+
+            <input
+              type="text"
+              name="telegram"
+              placeholder="Telegram username (необязательно)"
+              value={formData.telegram}
+              onChange={handleInputChange}
+            />
+            {errors.telegram && (
+              <p className="error" style={{ color: "red" }}>
+                {errors.telegram}
               </p>
             )}
 
