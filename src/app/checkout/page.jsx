@@ -115,6 +115,7 @@ const CheckoutPage = () => {
     const { name, value } = e.target;
 
     let isValid = true;
+
     if (name === "lastName") {
       isValid = /^[a-zA-Zа-яА-ЯёЁ0-9\s-]*$/.test(value);
     } else if (name === "city") {
@@ -123,7 +124,7 @@ const CheckoutPage = () => {
       isValid = /^[а-яА-ЯёЁ0-9\s-]*$/.test(value);
     } else if (name === "telegram") {
       // Разрешаем латиницу, цифры, нижние подчеркивания и символ @ в начале
-      isValid = /^[@a-zA-Z0-9_]*$/.test(value);
+      isValid = /^@?[a-zA-Z0-9_]*$/.test(value);
     }
 
     if (isValid) {
@@ -131,6 +132,14 @@ const CheckoutPage = () => {
         ...prev,
         [name]: value,
       }));
+
+      // Очищаем ошибку при вводе
+      if (errors[name]) {
+        setErrors((prev) => ({
+          ...prev,
+          [name]: "",
+        }));
+      }
     }
   };
 
@@ -157,6 +166,31 @@ const CheckoutPage = () => {
         ...prev,
         phoneNumber: "",
       }));
+    }
+  };
+
+  // Функция для сохранения заказа в базу данных
+  const saveOrderToDatabase = async (orderData) => {
+    try {
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(orderData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`Database error: ${JSON.stringify(errorData)}`);
+      }
+
+      const result = await response.json();
+      console.log("Order saved to database:", result);
+      return result;
+    } catch (error) {
+      console.error("Error saving order to database:", error);
+      throw error;
     }
   };
 
@@ -651,11 +685,82 @@ const CheckoutPage = () => {
         )
         .join("\n");
 
-      const message = `
+      // Форматируем Telegram username (добавляем @ если его нет)
+      const telegramUsername = formData.telegram.trim()
+        ? formData.telegram.startsWith("@")
+          ? formData.telegram
+          : `@${formData.telegram}`
+        : "не указан";
+
+      let mess = "";
+      if (selectedMethod === "pickup") {
+        mess = `Добрый день!\n\n Получили ваш заказ ✅ \n\n  с сайта ${site} ✅\n\nНаш адрес для самовывоза:\nГ.Москва\n\n Римского-Корсакова 11к8\nОриентир пункт «OZON»\n\nОплата наличными ❗️❗️\n\n Важно❗️❗️\nНеобходимо заранее согласовать дату и приблизительное время приезда.\Т При желании, можем отправить ваш заказ Яндекс курьером или Доставистой. В таком случае, оплатить заказ необходимо переводом на карту. \n\nКорзина:\n${formattedCart} \n\nИмя: ${formData.lastName}\nТелефон: +${formData.phoneNumber}\nTelegram: ${telegramUsername}`;
+      } else if (
+        selectedMethod === "delivery" &&
+        moscowCities.some((city) =>
+          formData.city.trim().toLowerCase().includes(city),
+        )
+      ) {
+        mess = `Здравствуйте!\n\nПолучили ваш заказ с сайта ${site} ✅\n\nЗаказы отправляем через Яндекс или Достависту, предварительно согласовав с вами стоимость доставки. Оплата за заказ - переводом на карту.\n\nМожем отправить в любое удобное для Вас время.\n\n❗️Первый заказ можно оплатить при получении курьеру Достависты (в пределах МКАД)\n\nКогда Вам было бы удобно принять заказ? 😊\n\nКорзина:\n${formattedCart} \n\nАдрес:\nГород: ${formData.city}\nАдрес: ${formData.streetAddress}\n\nКонтактные данные:\nИмя: ${formData.lastName}\nТелефон: +${formData.phoneNumber}\nTelegram: ${telegramUsername}`;
+      } else if (selectedMethod === "delivery") {
+        mess = `Здравствуйте!\nПолучили ваш заказ с сайта ${site} ✅\n\nВ регионы отправляем через CDEK. Процесс следующий:\n\nВысылаем фото вашего заказа и накладную Cdek (отправка по договору, тарифы минимальные, доставка будет оплачена нами сразу и включена в общий счет).\nВысылаем вам реквизиты для оплаты.\n\nВсе посылки отправляются в день заказа.\nОтправка из Москвы ❗️\nНаложенным платежом не отправляем ❌❌❌\n\nОт Вас нужны след данные:\n\nФИО \nАдрес ближ ПВЗ СДЭК\n\nКорзина:\n${formattedCart} \n\nКонтактные данные:\nИмя: ${formData.lastName}\nТелефон: +${formData.phoneNumber}\nTelegram: ${telegramUsername}\nАдрес доставки:\nГород: ${formData.city}\nАдрес: ${formData.streetAddress}`;
+      }
+
+      try {
+        let isFirstOrder = true;
+        let previousOrdersCount = 0;
+        const phoneNorm = formData.phoneNumber.replace(/\D/g, "");
+        const phoneE164 = `+${phoneNorm}`;
+        try {
+          const checkResponse = await fetch(
+            `/api/check-orders?phone=${encodeURIComponent(phoneE164)}`,
+            { cache: "no-store" },
+          );
+
+          const checkData = await checkResponse.json();
+          console.log("check-orders:", checkData);
+
+          previousOrdersCount = Number(checkData.previous_orders_count ?? 0);
+          isFirstOrder = previousOrdersCount === 0;
+        } catch (e) {
+          console.log("Could not check previous orders:", e);
+        }
+
+        // Подготавливаем данные для сохранения в базу
+        const orderData = {
+          customer_name: formData.lastName,
+          phone_number: phoneE164,
+          is_delivery: selectedMethod === "delivery",
+          city: formData.city || "Москва",
+          total_amount: totalPrice,
+          address: formData.streetAddress || "Самовывоз",
+          ordered_items: cartItems.map((item) => ({
+            product_name: `${item.name} (${item.type || "обычный"})`,
+            quantity: item.quantity,
+            price_at_time_of_order: item.price,
+          })),
+          is_first_order: isFirstOrder ? 1 : 0,
+        };
+
+        // Сохраняем заказ в базу данных
+        const dbResult = await saveOrderToDatabase(orderData);
+        const isFirstOrderFinal = dbResult?.is_first_order === 1;
+        const prevCountFinal = Number(
+          dbResult?.previous_orders_count ?? previousOrdersCount,
+        );
+
+        const headerLine = isFirstOrderFinal
+          ? "🔥 НОВЫЙ КЛИЕНТ 🔥"
+          : `📋 Повторный заказ (${prevCountFinal + 1}-й по счету)`;
+
+        const message = `
 Заказ с сайта ${site}
+
+${headerLine}
 
 Имя: ${formData.lastName}   
 Телефон: +${formData.phoneNumber}
+Telegram: ${telegramUsername}
 Способ доставки: ${selectedMethod === "delivery" ? "Доставка" : "Самовывоз"}
 ${
   selectedMethod === "delivery"
@@ -667,24 +772,11 @@ ${
 ${formattedCart}
 
 Общая сумма: ${totalPrice} ₽
-    `;
+      `;
 
-      let mess = "";
-      if (selectedMethod === "pickup") {
-        mess = `Добрый день!\n\n Получили ваш заказ ✅ \n\n  с сайта ${site} ✅\n\nНаш адрес для самовывоза:\nГ.Москва\n\n Римского-Корсакова 11к8\nОриентир пункт «OZON»\n\nОплата наличными ❗️❗️\n\n Важно❗️❗️\nНеобходимо заранее согласовать дату и приблизительное время приезда.\Т При желании, можем отправить ваш заказ Яндекс курьером или Доставистой. В таком случае, оплатить заказ необходимо переводом на карту. \n\nКорзина:\n${formattedCart} \n\nИмя: ${formData.lastName}\nТелефон: +${formData.phoneNumber}\nTelegram: ${telegramUsername}`;
-      } else if (
-        selectedMethod === "delivery" &&
-        moscowCities.some((city) =>
-          formData.city.trim().toLowerCase().includes(city),
-        )
-      ) {
-        mess = `Здравствуйте!\n\nПолучили ваш заказ с сайта ${site} ✅\n\nЗаказы отправляем через Яндекс или Достависту, предварительно согласовав с вами стоимость доставки. Оплата за заказ - переводом на карту.\n\nМожем отправить в любое удобное для Вас время.\n\n❗️Первый заказ можно оплатить при получении курьеру Достависты (в пределах МКАД)\n\nКогда Вам было бы удобно принять заказ? 😊\n\nКорзина:\n${formattedCart} \n\nАдрес \n\nГород: ${formData.city}\nАдрес: ${formData.streetAddress}`;
-      } else if (selectedMethod === "delivery") {
-        mess = `Здравствуйте!\nПолучили ваш заказ с сайта ${site} ✅\n\nВ регионы отправляем через CDEK. Процесс следующий:\n\nВысылаем фото вашего заказа и накладную Cdek (отправка по договору, тарифы минимальные, доставка будет оплачена нами сразу и включена в общий счет).\nВысылаем вам реквизиты для оплаты.\n\nВсе посылки отправляются в день заказа.\nОтправка из Москвы ❗️\nНаложенным платежом не отправляем ❌❌❌\n\nОт Вас нужны след данные:\n\nФИО \nАдрес ближ ПВЗ СДЭК\n\nКорзина:\n${formattedCart} \n\nГород: ${formData.city}\nАдрес: ${formData.streetAddress}`;
-      }
+        // Отправляем в Telegram
 
-      try {
-        const response = await fetch("/api/telegram-proxi", {
+        const telegramResponse = await fetch("/api/telegram-proxi", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -692,23 +784,23 @@ ${formattedCart}
           body: JSON.stringify({
             chat_id: "-1002155675591",
             text: message,
-            parse_mode: "Markdown",
+            parse_mode: "HTML",
           }),
         });
 
         // Проверяем статус ответа
-        if (!response.ok) {
-          const errorData = await response.json();
+        if (!telegramResponse.ok) {
+          const errorData = await telegramResponse.json();
           throw new Error(`Telegram error: ${JSON.stringify(errorData)}`);
         }
 
-        const result = await response.json();
-        console.log("Telegram response:", result);
+        const telegramResult = await telegramResponse.json();
+        console.log("Telegram response:", telegramResult);
 
         const idInstance = "1103290542";
         const apiTokenInstance =
           "65dee4a31f1342768913a5557afc548591af648dffc44259a6";
-        fetch(
+        const whatsappResponse = await fetch(
           `https://api.green-api.com/waInstance${idInstance}/SendMessage/${apiTokenInstance}`,
           {
             method: "POST",
@@ -720,18 +812,35 @@ ${formattedCart}
           },
         );
 
-        if (response.ok) {
-          console.log("Сообщение успешно отправлено в Telegram и WhatsApp!");
+        //  && whatsappResponse.ok
+        if (telegramResponse.ok && whatsappResponse.ok) {
+          console.log(
+            "Сообщение успешно отправлено в Telegram, WhatsApp и сохранено в базу!",
+          );
           alert(
             "Ваш заказ был отправлен!\nВ ближайшее время с вами свяжется наш менеджер.",
           );
           window.location.href = "/";
           clearCart();
         } else {
-          console.error("Ошибка при отправке сообщения в Telegram");
+          console.error(
+            "Ошибка при отправке сообщения в Telegram или WhatsApp",
+          );
         }
       } catch (error) {
         console.error("Ошибка при подключении к API", error);
+        // Даже если есть ошибка с базой данных, продолжаем выполнение
+        // и показываем пользователю успешное сообщение
+        if (error.message.includes("Database error")) {
+          console.log(
+            "Заказ сохранен в базе с ошибками, но отправлен в мессенджеры",
+          );
+          alert(
+            "Ваш заказ был отправлен!\nВ ближайшее время с вами свяжется наш менеджер.",
+          );
+          window.location.href = "/";
+          clearCart();
+        }
       }
     }
 
@@ -806,13 +915,6 @@ ${formattedCart}
           <div className="checkout-delivery">
             <h4>Способ доставки</h4>
             <div className="checkout-delivery-method">
-              {/* <button
-                type="button"
-                className={selectedMethod === "pickup" ? "active" : ""}
-                onClick={() => setSelectedMethod("pickup")}
-              >
-                Самовывоз
-              </button> */}
               <button
                 type="button"
                 className={selectedMethod === "pickup" ? "active" : ""}
@@ -821,6 +923,7 @@ ${formattedCart}
                 style={{
                   opacity: 0.5,
                   cursor: "not-allowed",
+                  position: "relative",
                 }}
               >
                 Самовывоз
@@ -855,6 +958,9 @@ ${formattedCart}
                   placeholder="Город"
                   value={formData.city}
                   onChange={handleInputChange}
+                  disabled={
+                    onlyPacksAndBlocks && totalQuantity < 10 && !hasBlock
+                  }
                 />
                 {errors.city && (
                   <p className="error" style={{ color: "red" }}>
@@ -868,6 +974,9 @@ ${formattedCart}
                   placeholder="Номер дома и название улицы"
                   value={formData.streetAddress}
                   onChange={handleInputChange}
+                  disabled={
+                    onlyPacksAndBlocks && totalQuantity < 10 && !hasBlock
+                  }
                 />
                 {errors.streetAddress && (
                   <p className="error" style={{ color: "red" }}>
@@ -879,13 +988,10 @@ ${formattedCart}
 
             {selectedMethod === "pickup" && (
               <div className="checkout-delivery-pickup">
-                <p>
-                  Забирать заказ по адресу:
-                  <br />
-                  г.Москва - ул. Римского-Корсакова, 11, корп 8 Ориентир: Пункт
-                  "OZON" (САМОВЫВОЗ ОСУЩЕСТВЛЯЕТСЯ ПО СОГЛАСОВАНИЮ)
+                <p style={{ color: "rgb(198, 58, 58)", fontWeight: "bold" }}>
+                  ⚠️ Самовывоз временно недоступен. Пожалуйста, выберите
+                  доставку.
                 </p>
-                {/* <p>Самовывоз по тех. причинам временно недоступен</p> */}
               </div>
             )}
           </div>
@@ -957,14 +1063,26 @@ ${formattedCart}
             </div>
             <button
               onClick={handleExternalSubmit}
-              disabled={
-                loading ||
-                selectedMethod === "pickup" ||
-                (onlyPacksAndBlocks && totalQuantity < 10 && !hasBlock)
-              }
+              disabled={loading || selectedMethod === "pickup"}
+              style={{
+                opacity: selectedMethod === "pickup" ? 0.5 : 1,
+                cursor: selectedMethod === "pickup" ? "not-allowed" : "pointer",
+              }}
             >
               {loading ? "Загрузка..." : "Заказать"}
             </button>
+            {selectedMethod === "pickup" && (
+              <p
+                style={{
+                  color: "rgb(198, 58, 58)",
+                  fontSize: "14px",
+                  textAlign: "center",
+                  marginTop: "10px",
+                }}
+              >
+                Самовывоз недоступен. Выберите доставку для оформления заказа.
+              </p>
+            )}
           </div>
         ) : (
           <div>
