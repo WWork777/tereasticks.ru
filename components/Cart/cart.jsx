@@ -139,11 +139,7 @@ const Cart = () => {
               onClick={checkOut}
               data-bs-dismiss="offcanvas"
               aria-label="Close"
-              disabled={
-                loading ||
-                selectedMethod === "pickup" ||
-                (onlyPacksAndBlocks && totalQuantity < 10 && !hasBlock)
-              }
+              disabled={onlyPacksAndBlocks && totalQuantity < 10 && !hasBlock}
             >
               Перейти к оформлению
             </button>
