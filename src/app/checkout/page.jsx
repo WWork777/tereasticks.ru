@@ -7,7 +7,7 @@ import PhoneInput from "react-phone-input-2";
 import Link from "next/link";
 
 const CheckoutPage = () => {
-  const [selectedMethod, setSelectedMethod] = useState("pickup");
+  const [selectedMethod, setSelectedMethod] = useState("delivery");
   const [loading, setLoading] = useState(false);
   const {
     cartItems,
@@ -23,6 +23,7 @@ const CheckoutPage = () => {
   const [formData, setFormData] = useState({
     lastName: "",
     phoneNumber: "",
+    telegram: "",
     city: "",
     streetAddress: "",
     privacyConsent: false,
@@ -40,27 +41,60 @@ const CheckoutPage = () => {
 
   const [errors, setErrors] = useState({});
 
+  const scroolTo = (element) => {
+    if (element) {
+      element.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center'
+      });
+      element.focus();
+    }
+  }
+
   const validateForm = () => {
     const newErrors = {};
+    let elements;
+    let element;
 
-    if (!formData.lastName.trim()) {
-      newErrors.lastName = "Введите имя";
+    if (selectedMethod === "delivery") {
+
+      if (!formData.streetAddress.trim()) {
+        element = document.querySelector(`[placeholder="Номер дома и название улицы"]`);
+        scroolTo(element)
+        newErrors.streetAddress = "Введите адрес";
+      }
+
+      if (!formData.city.trim()) {
+        element = document.querySelector(`[placeholder="Город"]`);
+        scroolTo(element)
+        newErrors.city = "Введите город";
+      }
     }
 
     if (!formData.phoneNumber) {
+      element = document.querySelector(`[placeholder="Введите номер телефона"]`);
+      scroolTo(element)
       newErrors.phoneNumber = "Введите номер телефона";
     } else if (formData.phoneNumber.replace(/\D/g, "").length < 11) {
+      element = document.querySelector(`[placeholder="Введите номер телефона"]`);
+      scroolTo(element)
       newErrors.phoneNumber = "Некорректный номер телефона";
     }
 
-    if (selectedMethod === "delivery") {
-      if (!formData.city.trim()) {
-        newErrors.city = "Введите город";
+    if (!formData.lastName.trim()) {
+      elements = document.getElementsByName('lastName');
+      if (elements.length > 0) {
+        element = elements[0];
+        scroolTo(element)
       }
+      newErrors.lastName = "Введите имя";
+    }
 
-      if (!formData.streetAddress.trim()) {
-        newErrors.streetAddress = "Введите адрес";
-      }
+    if (
+      formData.telegram.trim() &&
+      !/^[@a-zA-Z0-9_]{5,32}$/.test(formData.telegram.replace(/^@/, ""))
+    ) {
+      newErrors.telegram = "Некорректный формат Telegram username";
     }
 
     if (!formData.privacyConsent) {
@@ -76,10 +110,16 @@ const CheckoutPage = () => {
     const { name, value } = e.target;
 
     let isValid = true;
-    if (name === "lastName" || name === "city") {
-      isValid = /^[а-яА-ЯёЁ\s-]*$/.test(value);
+    if (name === "lastName") {
+      isValid = /^[a-zA-Zа-яА-ЯёЁ0-9\s-]*$/.test(value);
+    }
+    else if (name === "city") {
+      isValid = /^[а-яА-ЯёЁ0-9\s-]*$/.test(value);
     } else if (name === "streetAddress") {
       isValid = /^[а-яА-ЯёЁ0-9\s-]*$/.test(value);
+    } else if (name === "telegram") {
+      // Разрешаем латиницу, цифры, нижние подчеркивания и символ @ в начале
+      isValid = /^[@a-zA-Z0-9_]*$/.test(value);
     }
 
     if (isValid) {
@@ -703,7 +743,10 @@ ${formattedCart}
   return (
     <div className="checkout-page">
       <div className="checkout-form">
-        <h1>Оформление заказа</h1>
+        <div className="plitka">
+          <h1>Оформление заказа</h1>
+          <h5>ВАЖНО! Укажите Ваш номер в WhatsApp или Telegram ник для связи</h5>
+        </div>
         <form onSubmit={handleSubmit} ref={formRef}>
           <div className="checkout-name">
             <h4>Контактные данные</h4>
@@ -717,6 +760,19 @@ ${formattedCart}
             {errors.lastName && (
               <p className="error" style={{ color: "red" }}>
                 {errors.lastName}
+              </p>
+            )}
+
+            <input
+              type="text"
+              name="telegram"
+              placeholder="Telegram username (необязательно)"
+              value={formData.telegram}
+              onChange={handleInputChange}
+            />
+            {errors.telegram && (
+              <p className="error" style={{ color: "red" }}>
+                {errors.telegram}
               </p>
             )}
 
@@ -744,12 +800,28 @@ ${formattedCart}
           <div className="checkout-delivery">
             <h4>Способ доставки</h4>
             <div className="checkout-delivery-method">
-              <button
+              {/* <button
                 type="button"
                 className={selectedMethod === "pickup" ? "active" : ""}
                 onClick={() => setSelectedMethod("pickup")}
               >
                 Самовывоз
+              </button> */}
+              <button
+                type="button"
+                className={selectedMethod === "pickup" ? "active" : ""}
+                onClick={() => setSelectedMethod("pickup")}
+                disabled={true}
+                style={{
+                  opacity: 0.5,
+                  cursor: "not-allowed",
+                }}
+              >
+                Самовывоз
+                <br />
+                <span style={{ fontSize: "14px", color: "rgb(198, 58, 58)" }}>
+                  Недоступен
+                </span>
               </button>
               {onlyPacksAndBlocks && totalQuantity < 10 && !hasBlock ? (
                 <button type="button" className={selectedMethod} disabled>
@@ -854,10 +926,11 @@ ${formattedCart}
                 }}
               >
                 <input
+                className="privacy-input"
                   type="checkbox"
                   checked={formData.privacyConsent}
                   onChange={handleConsentChange}
-                  style={{ width: "auto" }}
+                  // style={{ width: "auto" }}
                 />
 
                 <Link
