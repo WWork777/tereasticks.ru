@@ -42,7 +42,6 @@ export default function Home() {
       <New />
       <About />
       <Reviews />
-      <ModalManager/>
     </>
   );
 }
