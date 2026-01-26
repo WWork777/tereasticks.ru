@@ -17,12 +17,12 @@ export async function generateMetadata() {
     description:
       "Каталог аксессуаров для устройств IQOS ILUMA с доставкой по Москве. Лучший выбор вкусов и брендов!",
     alternates: {
-      canonical: `https://tereasticks.ru/products/devices`,
+      canonical: `https://tereasticks.ru/products/aksesuary-dlya-iqos-iluma`,
     },
     openGraph: {
       title: `Купить аксессуары для IQOS ILUMA в TereaStikcs с доставкой по Москве`,
       description: `Каталог аксессуаров для устройств IQOS ILUMA с доставкой по Москве. Лучший выбор вкусов и брендов!`,
-      url: `https://tereasticks.ru/products/devices`,
+      url: `https://tereasticks.ru/products/aksesuary-dlya-iqos-iluma`,
       images: [
         {
           url: `/favicon/web-app-manifest-512x512`,
@@ -44,8 +44,8 @@ export default async function Page() {
 
   return (
     <div className="products-container">
-      <h1 style={{ position: "absolute", zIndex: "-9999" }}>
-        Аксессуары Iluma
+      <h1 className="page-title">
+        Купить акессуары для IQOS ILUMA в Москве и России
       </h1>
       <ClientFilters items={items} />
     </div>

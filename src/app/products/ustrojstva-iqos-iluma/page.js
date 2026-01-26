@@ -17,12 +17,12 @@ export async function generateMetadata() {
     description:
       "Каталог устройств IQOS ILUMA с доставкой по Москве. Лучший выбор вкусов и брендов!",
     alternates: {
-      canonical: `https://tereasticks.ru/products/iqos`,
+      canonical: `https://tereasticks.ru/products/ustrojstva-iqos-iluma`,
     },
     openGraph: {
       title: `Купить устройства IQOS ILUMA в Iluma-store с доставкой по Москве`,
       description: `Каталог устройствв IQOS ILUMA с доставкой по Москве. Лучший выбор вкусов и брендов!`,
-      url: `https://tereasticks.ru/products/iqos`,
+      url: `https://tereasticks.ru/products/ustrojstva-iqos-iluma`,
       images: [
         {
           url: `/favicon/web-app-manifest-512x512`,
@@ -44,7 +44,9 @@ export default async function Page() {
 
   return (
     <div className="products-container">
-      <h1 style={{ position: "absolute", zIndex: "-9999" }}>Iqos Iluma</h1>
+      <h1 className="page-title">
+        Оригинальные устройства IQOS ILUMA — купить в Москве и России
+      </h1>
       <ClientFilters items={items} />
     </div>
   );
