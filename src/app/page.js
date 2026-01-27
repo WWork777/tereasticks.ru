@@ -12,7 +12,7 @@ import FAQ from "../../components/Home/FAQ/faq";
 import SEOText from "../../components/Home/Seotext/seotext";
 
 export const metadata = {
-  title: "Стики Terea и Iqos iluma — купить в Москве с доставкой | Iluma Store",
+  title: "Стики Terea и Iqos iluma — купить в Москве с доставкой",
   description:
     "Купить IQOS Iluma и стики Terea с доставкой по Москве и России. Оригинальные устройства, акции, скидки и гарантия качества в Iluma Store.",
   alternates: {
