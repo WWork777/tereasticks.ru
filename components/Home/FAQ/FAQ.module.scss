@@ -1,0 +1,368 @@
+.faq {
+  display: flex;
+  flex-direction: column;
+  padding: 0 15%;
+  margin-bottom: 60px;
+  margin-top: 60px;
+  min-height: auto;
+  position: relative;
+}
+
+.title {
+  color: white;
+  font-size: 46px;
+  font-weight: 600;
+  position: relative;
+  padding-bottom: 20px;
+  margin-bottom: 10px;
+}
+
+.list {
+  margin-top: 50px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: relative;
+}
+
+.item {
+  border-radius: 20px;
+  padding: 20px;
+  background: #1d1c1c;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.item::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+}
+
+.item:hover {
+  box-shadow:
+    0 8px 30px rgba(0, 0, 0, 0.2),
+    0 0 0 1px rgba(255, 255, 255, 0.03);
+  transform: translateY(-4px);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.item.active {
+  background: linear-gradient(145deg, #1d1c1c, #222121);
+  box-shadow:
+    0 10px 35px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.question {
+  width: 100%;
+  background: none;
+  border: none;
+  font-size: 18px;
+  font-weight: 600;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  padding: 8px 0;
+  color: rgb(255, 255, 255);
+  transition: all 0.3s ease;
+  position: relative;
+  letter-spacing: -0.01em;
+  text-align: left;
+  line-height: 1.4;
+}
+
+.question:hover {
+  color: #f8f8f8;
+  padding-left: 5px;
+}
+
+.question::before {
+  content: "";
+  position: absolute;
+  left: -20px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 6px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.question:hover::before {
+  opacity: 1;
+  left: -15px;
+}
+
+.icon {
+  font-size: 22px;
+  transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-left: 15px;
+  color: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.question:hover .icon {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.1);
+}
+
+.answer {
+  margin-top: 0;
+  font-size: 16px;
+  line-height: 1.7;
+  color: #aaa;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  padding-left: 8px;
+  border-left: 2px solid transparent;
+  transform: translateY(-10px);
+}
+
+.answer.open {
+  max-height: 500px;
+  opacity: 1;
+  margin-top: 16px;
+  transform: translateY(0);
+  border-left-color: rgba(255, 255, 255, 0.1);
+  padding-left: 16px;
+}
+
+/* Анимация для иконки */
+.answer.open + .question .icon,
+.item:has(.answer.open) .question .icon {
+  transform: rotate(180deg);
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Плавное появление текста ответа */
+.answer.open {
+  animation: fadeInUp 0.5s ease forwards;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Микро-анимация при открытии вопроса */
+@keyframes itemFocus {
+  0% {
+    transform: translateY(-4px);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+  100% {
+    transform: translateY(-4px);
+  }
+}
+
+.item.active {
+  animation: itemFocus 0.3s ease;
+}
+
+/* Адаптивность для длинных вопросов */
+.question {
+  word-break: break-word;
+  padding-right: 15px;
+}
+
+/* Эффект градиента для заголовка */
+.title {
+  background: linear-gradient(135deg, #ffffff 0%, #e0e0e0 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Стили для скроллбара внутри ответов (если нужно) */
+.answer::-webkit-scrollbar {
+  width: 4px;
+}
+
+.answer::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 2px;
+}
+
+.answer::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+}
+
+/* Добавляем плавный transition для hover */
+.item {
+  will-change: transform, box-shadow;
+}
+
+/* Адаптивные стили для телефонов */
+@media (max-width: 768px) {
+  .faq {
+    padding: 0 15px;
+    margin-bottom: 40px;
+    margin-top: 40px;
+    min-height: auto;
+    height: auto;
+  }
+
+  .title {
+    font-size: 28px;
+    padding-bottom: 15px;
+    margin-bottom: 5px;
+    text-align: left;
+  }
+
+  .title::after {
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 3px;
+  }
+
+  .list {
+    margin-top: 30px;
+    gap: 12px;
+  }
+
+  .item {
+    border-radius: 16px;
+    padding: 16px;
+    border-width: 1px;
+  }
+
+  .question {
+    font-size: 16px;
+    padding: 6px 0;
+    line-height: 1.3;
+    align-items: flex-start;
+  }
+
+  .question::before {
+    left: -12px;
+    width: 4px;
+    height: 4px;
+  }
+
+  .question:hover::before {
+    left: -10px;
+  }
+
+  .icon {
+    width: 28px;
+    height: 28px;
+    font-size: 18px;
+    margin-left: 10px;
+    margin-top: 2px;
+  }
+
+  .answer {
+    font-size: 15px;
+    line-height: 1.6;
+    padding-left: 6px;
+  }
+
+  .answer.open {
+    padding-left: 12px;
+    margin-top: 12px;
+    max-height: 800px; /* Для длинных ответов */
+  }
+
+  /* Убираем hover эффекты на тач-устройствах */
+  @media (hover: none) and (pointer: coarse) {
+    .item:hover {
+      transform: none;
+      box-shadow: none;
+    }
+
+    .question:hover {
+      padding-left: 0;
+      color: rgb(255, 255, 255);
+    }
+
+    .question:hover .icon {
+      transform: none;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .question:hover::before {
+      opacity: 0;
+    }
+  }
+
+  /* Улучшение для очень маленьких экранов */
+  @media (max-width: 360px) {
+    .faq {
+      padding: 0 16px;
+    }
+
+    .title {
+      font-size: 24px;
+    }
+
+    .item {
+      padding: 14px;
+      border-radius: 14px;
+    }
+
+    .question {
+      font-size: 15px;
+    }
+
+    .icon {
+      width: 24px;
+      height: 24px;
+      font-size: 16px;
+    }
+
+    .answer {
+      font-size: 14px;
+    }
+  }
+}
+
+/* Адаптация для планшетов */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .faq {
+    padding: 0 10%;
+  }
+
+  .title {
+    font-size: 38px;
+  }
+
+  .list {
+    margin-top: 40px;
+  }
+}

@@ -4,7 +4,7 @@ import ClientFilters from "./client";
 async function fetchItems(type, ref) {
   const res = await fetch(
     `https://iluma-store.ru/api/products/getproductinfo/${type}/${ref}`,
-    { cache: "no-store" }
+    { cache: "no-store" },
   );
   if (!res.ok) throw new Error("Ошибка загрузки товаров");
   return res.json();

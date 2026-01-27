@@ -1,0 +1,98 @@
+/* SEOText.module.scss */
+.seoText {
+  display: flex;
+  flex-direction: column;
+  padding: 0 15%;
+  margin-bottom: 60px;
+  margin-top: 60px;
+  min-height: auto;
+  position: relative;
+}
+
+.seoText h1 {
+  color: white;
+  font-size: 32px;
+  margin-bottom: 30px;
+  text-align: left;
+}
+
+.seoText h2 {
+  color: white;
+  font-size: 24px;
+  margin: 35px 0 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid rgba(76, 175, 80, 0.3);
+}
+
+.seoText h3 {
+  color: #ddd;
+  font-size: 20px;
+  margin: 25px 0 15px;
+}
+
+.seoText p {
+  color: #ccc;
+  margin-bottom: 20px;
+  font-size: 17px;
+}
+
+.seoText strong {
+  color: white;
+  font-weight: 600;
+}
+
+.seoText ul {
+  color: #ccc;
+  margin: 15px 0 25px 25px;
+  padding: 0;
+}
+
+.seoText li {
+  margin-bottom: 10px;
+  position: relative;
+  padding-left: 10px;
+}
+
+.seoText li::before {
+  color: #4caf50;
+  position: absolute;
+  left: -15px;
+  font-size: 20px;
+}
+
+.seoKeywords {
+  margin-top: 40px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 10px;
+}
+
+.seoKeywords small {
+  color: #888;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .seoText {
+    padding: 25px 0px;
+    margin: 40px 15px;
+  }
+
+  .seoText h1 {
+    font-size: 22px;
+  }
+
+  .seoText h2 {
+    font-size: 18px;
+  }
+
+  .seoText h3 {
+    font-size: 14px;
+  }
+
+  .seoText p {
+    font-size: 14px;
+  }
+}

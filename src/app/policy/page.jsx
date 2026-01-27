@@ -1,4 +1,26 @@
 import styles from "./styles.module.scss";
+import Head from "next/head";
+
+export const metadata = {
+  title: "Политика конфиденциальности",
+  description: "Страница политиики конфиденциальности",
+  alternates: {
+    canonical: "https://tereasticks.ru/policy",
+  },
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+    googleBot: {
+      index: false,
+      follow: false,
+      noimageindex: true,
+      "max-video-preview": -1,
+      "max-image-preview": "none",
+      "max-snippet": -1,
+    },
+  },
+};
 
 export default function Policy() {
   return (
@@ -10,7 +32,7 @@ export default function Policy() {
         </div>
       </div>
 
-      <div class="container" style={{color:"#fff"}}>
+      <div class="container" style={{ color: "#fff" }}>
         <p class="last-update">Последнее обновление: 10 ноября 2023 г.</p>
 
         <h2>1. Общие положения</h2>
