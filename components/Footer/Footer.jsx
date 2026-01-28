@@ -24,10 +24,6 @@ export default function Footer() {
               <Link href={"/policy"}>Политика конфиденциальности</Link>
             </div>
             <div className="adress">
-              <p>
-                г.Москва - ул. Римского-Корсакова, 11, корп 8 <br></br>{" "}
-                Ориентир: Пункт OZON
-              </p>
               <p>(САМОВЫВОЗ ВРЕМЕННО НЕДОСТУПЕН)</p>
               <p>Заказ от 1 блока! = 10 пачек</p>
               <p>2 пачки не продаем</p>
@@ -37,9 +33,9 @@ export default function Footer() {
             <div className="footer-tel">
               <a href="tel:+7 (995) 153-80-19">+7 (995) 153-80-19</a>
               <p>
-                Пн-пт: с 12:00 до 23:00
+                Пн-Пт: с 12:00 до 20:00
                 <br />
-                Сб-вс: с 12.00-21.00
+                Сб-вс: с 12.00-20.00
               </p>
             </div>
             <div className="links-contacts">
