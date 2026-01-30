@@ -884,6 +884,30 @@ ${formattedCart}
               placeholder="Telegram username (необязательно)"
               value={formData.telegram}
               onChange={handleInputChange}
+              onFocus={(e) => {
+                // Если поле пустое или не начинается с @, добавляем @
+                const value = formData.telegram;
+                if (!value.startsWith("@")) {
+                  setFormData((prev) => ({
+                    ...prev,
+                    telegram: "@" + (value || ""),
+                  }));
+
+                  // Устанавливаем курсор после @
+                  setTimeout(() => {
+                    e.target.setSelectionRange(1, 1);
+                  }, 0);
+                }
+              }}
+              onBlur={(e) => {
+                // Если только @, очищаем поле
+                if (formData.telegram === "@") {
+                  setFormData((prev) => ({
+                    ...prev,
+                    telegram: "",
+                  }));
+                }
+              }}
             />
             {errors.telegram && (
               <p className="error" style={{ color: "red" }}>
