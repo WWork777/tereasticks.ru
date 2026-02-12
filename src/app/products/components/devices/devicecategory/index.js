@@ -66,7 +66,7 @@ const DeviceCategory = ({
             Устройства
           </Link>
           <Link
-            href="/products/stiki-terea-dlya-iqos-ilumaterea"
+            href="/products/stiki-terea-dlya-iqos-iluma"
             className={`custom-button`}
           >
             Стики

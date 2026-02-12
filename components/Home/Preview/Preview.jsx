@@ -20,7 +20,7 @@ export default function Preview() {
         </div>
         <div className="preview-column-two">
           <Link
-            href="/products/stiki-terea-dlya-iqos-ilumaterea"
+            href="/products/stiki-terea-dlya-iqos-iluma"
             className="preview-card"
           >
             <h3>Стики Terea</h3>

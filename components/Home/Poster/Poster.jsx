@@ -44,7 +44,7 @@ export default function Poster() {
           </SwiperSlide>
           <SwiperSlide>
             <Link
-              href={"/products/stiki-terea-dlya-iqos-ilumaterea"}
+              href={"/products/stiki-terea-dlya-iqos-iluma"}
               className="services-card"
             >
               <div>

@@ -48,13 +48,13 @@ export async function generateMetadata() {
     description:
       "Купить стики Terea с доставкой по Москве. Лучший выбор вкусов и брендов!",
     alternates: {
-      canonical: `https://tereasticks.ru/products/stiki-terea-dlya-iqos-ilumaterea`,
+      canonical: `https://tereasticks.ru/products/stiki-terea-dlya-iqos-iluma`,
     },
     openGraph: {
       title,
       description:
         "Купить стики Terea с доставкой по Москве. Лучший выбор вкусов и брендов!",
-      url: `https://tereasticks.ru/products/stiki-terea-dlya-iqos-ilumaterea`,
+      url: `https://tereasticks.ru/products/stiki-terea-dlya-iqos-iluma`,
       images: [
         {
           url: `https://tereasticks.ru/favicon/web-app-manifest-512x512.png`,

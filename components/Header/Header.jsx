@@ -242,9 +242,9 @@ export default function Header() {
             </Link>
             <Link
               className="link-close"
-              href="/products/stiki-terea-dlya-iqos-ilumaterea"
+              href="/products/stiki-terea-dlya-iqos-iluma"
               onClick={(e) =>
-                handleLinkClick(e, "/products/stiki-terea-dlya-iqos-ilumaterea")
+                handleLinkClick(e, "/products/stiki-terea-dlya-iqos-iluma")
               }
             >
               Стики
