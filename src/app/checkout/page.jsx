@@ -74,7 +74,7 @@ const CheckoutPage = () => {
       if (!formData.city.trim()) {
         element = document.querySelector(`[name="city"]`);
         scroolTo(element);
-        newErrors.city = "Введите город доставки";
+        newErrors.city = "Город обязателен для заполнения";
       } else if (!/^[а-яА-ЯёЁ0-9\s-]+$/.test(formData.city)) {
         element = document.querySelector(`[name="city"]`);
         scroolTo(element);
@@ -1097,22 +1097,34 @@ ${formattedCart}
 
             {selectedMethod === "delivery" && (
               <div className="checkout-delivery-address">
-                <input
-                  type="text"
-                  name="city"
-                  placeholder="Город *"
-                  value={formData.city}
-                  onChange={handleInputChange}
-                  disabled={
-                    onlyPacksAndBlocks && totalQuantity < 10 && !hasBlock
-                  }
-                  required={selectedMethod === "delivery"}
-                />
-                {errors.city && (
-                  <p className="error" style={{ color: "red" }}>
-                    {errors.city}
-                  </p>
-                )}
+                <div style={{ position: "relative", width: "100%" }}>
+                  <input
+                    type="text"
+                    name="city"
+                    placeholder="Город *"
+                    value={formData.city}
+                    onChange={handleInputChange}
+                    disabled={
+                      onlyPacksAndBlocks && totalQuantity < 10 && !hasBlock
+                    }
+                    style={{
+                      border: errors.city ? "2px solid red" : "",
+                    }}
+                  />
+                  {errors.city && (
+                    <p
+                      style={{
+                        color: "red",
+                        fontSize: "14px",
+                        marginTop: "5px",
+                        marginBottom: "0",
+                        fontWeight: "500",
+                      }}
+                    >
+                      ⚠️ {errors.city}
+                    </p>
+                  )}
+                </div>
 
                 <input
                   type="text"
