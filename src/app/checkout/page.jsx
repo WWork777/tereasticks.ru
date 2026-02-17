@@ -75,7 +75,7 @@ const CheckoutPage = () => {
         element = document.querySelector(`[name="city"]`);
         scroolTo(element);
         newErrors.city = "Введите ваш город";
-      } else if (!/^[а-яА-ЯёЁ0-9\s-]+$/.test(formData.city)) {
+      } else if (!/^[a-zA-Zа-яА-ЯёЁ0-9\s-]+$/.test(formData.city)) {
         element = document.querySelector(`[name="city"]`);
         scroolTo(element);
         newErrors.city =
@@ -105,7 +105,7 @@ const CheckoutPage = () => {
     } else if (name === "lastName") {
       isValid = /^[a-zA-Zа-яА-ЯёЁ0-9\s-]*$/.test(value);
     } else if (name === "city") {
-      isValid = /^[а-яА-ЯёЁ0-9\s-]*$/.test(value);
+      isValid = /^[a-zA-Zа-яА-ЯёЁ0-9\s-]*$/.test(value); // Добавлены английские буквы
     } else if (name === "streetAddress") {
       isValid = /^[а-яА-ЯёЁ0-9\s-]*$/.test(value);
     }
