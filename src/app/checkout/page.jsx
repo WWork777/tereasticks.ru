@@ -74,7 +74,7 @@ const CheckoutPage = () => {
       if (!formData.city.trim()) {
         element = document.querySelector(`[name="city"]`);
         scroolTo(element);
-        newErrors.city = "Город обязателен для заполнения";
+        newErrors.city = "Введите ваш город";
       } else if (!/^[а-яА-ЯёЁ0-9\s-]+$/.test(formData.city)) {
         element = document.querySelector(`[name="city"]`);
         scroolTo(element);
@@ -1107,9 +1107,6 @@ ${formattedCart}
                     disabled={
                       onlyPacksAndBlocks && totalQuantity < 10 && !hasBlock
                     }
-                    style={{
-                      border: errors.city ? "2px solid red" : "",
-                    }}
                   />
                   {errors.city && (
                     <p
@@ -1121,7 +1118,7 @@ ${formattedCart}
                         fontWeight: "500",
                       }}
                     >
-                      ⚠️ {errors.city}
+                      {errors.city}
                     </p>
                   )}
                 </div>
