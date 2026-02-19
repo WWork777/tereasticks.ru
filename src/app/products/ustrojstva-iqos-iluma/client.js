@@ -191,7 +191,7 @@ export default function ClientFilters({ items: initialItems }) {
 
     // И загружаем все товары
     setLoading(true);
-    fetch("/api/filter/iqos", {
+    fetch("/api/filter/ustrojstva-iqos-iluma", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
