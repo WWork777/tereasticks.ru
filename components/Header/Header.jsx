@@ -63,7 +63,7 @@ export default function Header() {
             height={100}
           />
           <div className="name">
-            <span>TereaSticks</span>
+            <span>ТереяСтикс</span>
           </div>
         </Link>
         <div className="menu">
@@ -221,7 +221,7 @@ export default function Header() {
                 height={100}
               />
               <div className="name">
-                <span>TereaSticks</span>
+                <span>ТереяСтикс</span>
               </div>
             </div>
             <Link
