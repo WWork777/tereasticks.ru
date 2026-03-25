@@ -72,7 +72,7 @@ export default function Header() {
           <Link href="/products/stiki-terea-dlya-iqos-iluma">Стики</Link>
           <Link href="/products/aksesuary-dlya-iqos-iluma">Аксессуары</Link>
           <Link href="/products">Каталог</Link>
-          <Link href="/contacts">Контакты</Link>
+          {/* <Link href="/contacts">Контакты</Link> */}
         </div>
         <div className="cart-menu">
           <button
@@ -125,7 +125,7 @@ export default function Header() {
           </button>
 
           <div className="contacts-container">
-            <div className="icons">
+            {/* <div className="icons">
               <a href="https://t.me/Ilumastore2025">
                 <svg
                   className="head-tg"
@@ -188,9 +188,9 @@ export default function Header() {
                   <g id="Layer_1" />
                 </svg>
               </a>
-            </div>
+            </div> */}
             <div className="tel">
-              <a href="tel:+7 (995) 153-80-19">+7 (995) 153-80-19</a>
+              <a href="tel:"></a>
             </div>
           </div>
         </div>
@@ -265,15 +265,15 @@ export default function Header() {
             >
               Каталог
             </Link>
-            <Link
+            {/* <Link
               className="link-close"
               href="/contacts"
               onClick={(e) => handleLinkClick(e, "/contacts")}
             >
               Контакты
-            </Link>
+            </Link> */}
             <div className="footer-contacts">
-              <div className="contacts-container">
+              {/* <div className="contacts-container">
                 <div className="icons">
                   <a href="https://t.me/Ilumastore2025">
                     <svg
@@ -339,9 +339,9 @@ export default function Header() {
                   </a>
                 </div>
                 <div className="tel">
-                  <a href="tel:+7 (995) 153-80-19">+7 (995) 153-80-19</a>
+                  <a href="tel:"></a>
                 </div>
-              </div>
+              </div> */}
             </div>
           </div>
         </div>
