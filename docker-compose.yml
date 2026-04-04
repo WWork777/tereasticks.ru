@@ -3,6 +3,8 @@ version: "3"
 services:
   app:
     build: .
+    env_file:
+      - .env
     container_name: tereasticks.ru # меняем на имя проекта
     restart: always
     environment:
