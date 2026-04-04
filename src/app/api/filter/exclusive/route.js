@@ -43,6 +43,6 @@ export async function POST(req) {
         return new Response(JSON.stringify(rows), { status: 200 });
     } catch (error) {
         console.error('Ошибка выполнения запроса:', error.message, error.stack);
-        return new Response(JSON.stringify({ error: 'Ошибка выполнения запроса', details: error.message }), { status: 500 });
+        return new Response(JSON.stringify({ error: 'Ошибка выполнения запроса' }), { status: 500 });
     }
 }

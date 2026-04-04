@@ -1,9 +1,13 @@
 // src/app/api/email/route.js
 import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
+import { rateLimit, rateLimitResponse } from "@/lib/rate-limit";
 
 export async function POST(req) {
   try {
+    const { limited } = rateLimit(req, { windowMs: 60_000, max: 5, prefix: "email" });
+    if (limited) return rateLimitResponse();
+
     // Извлекаем данные из тела запроса
     const body = await req.json();
 
@@ -27,20 +31,20 @@ export async function POST(req) {
 
     // Конфигурация SMTP
     const transporter = nodemailer.createTransport({
-      host: "smtp.yandex.ru",
-      port: 465,
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT || "465"),
       secure: true,
       auth: {
-        user: "sersur42@yandex.ru",
-        pass: "xidetvxcflvenyqk",
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
       },
     });
 
-    const to = "ww9200073@gmail.com";
-    const from = "sersur42@yandex.ru";
+    const to = process.env.EMAIL_TO;
+    const from = process.env.SMTP_USER;
 
     // Извлекаем информацию из текста
-    let subject = "Заявка с сайта tereasticks.ru";
+    let subject = "Заявка с сайта iluma-store";
     let customerName = "Клиент";
 
     // Поиск имени в тексте
@@ -51,9 +55,9 @@ export async function POST(req) {
 
     // Поиск нового/повторного клиента
     if (text.includes("НОВЫЙ КЛИЕНТ") || text.includes("🔥 НОВЫЙ КЛИЕНТ 🔥")) {
-      subject = `🔥 НОВЫЙ КЛИЕНТ: ${customerName} - tereasticks.ru`;
+      subject = `🔥 НОВЫЙ КЛИЕНТ: ${customerName} - iluma-store`;
     } else {
-      subject = `Заявка от ${customerName} - tereasticks.ru`;
+      subject = `Заявка от ${customerName} - iluma-store`;
     }
 
     // Форматируем текст для HTML с сохранением переносов
@@ -164,7 +168,7 @@ export async function POST(req) {
         <body>
           <div class="email-container">
             <div class="email-header">
-              <h2>Заявка с сайта tereasticks.ru</h2>
+              <h2>Заявка с сайта iluma-store.ru</h2>
             </div>
             
             <div class="email-content">
@@ -229,7 +233,7 @@ export async function POST(req) {
               </div>
               
               <div class="footer">
-                <p>Отправлено с сайта tereasticks.ru</p>
+                <p>Отправлено с сайта iluma-store.ru</p>
                 <p>${new Date().toLocaleString("ru-RU", {
                   year: "numeric",
                   month: "long",
@@ -246,14 +250,14 @@ export async function POST(req) {
 
     const mailOptions = {
       to,
-      from: `"tereasticks.ru" <${from}>`,
+      from: `"Iluma Store" <${from}>`,
       subject,
       // text, // plain text версия
       html,
       headers: {
         "Content-Type": "text/html; charset=UTF-8",
         "Content-Transfer-Encoding": "quoted-printable",
-        "X-Mailer": "tereasticks.ru Contact Form",
+        "X-Mailer": "Iluma Store Contact Form",
       },
     };
 

@@ -1,6 +1,7 @@
 // app/api/check-orders/route.js
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
+import { rateLimit, rateLimitResponse } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -9,6 +10,9 @@ const normalizePhone = (p) => (p || "").replace(/\D/g, ""); // только ци
 
 export async function GET(request) {
   try {
+    const { limited } = rateLimit(request, { windowMs: 60_000, max: 10, prefix: "check-orders" });
+    if (limited) return rateLimitResponse();
+
     const { searchParams } = new URL(request.url);
     const phone = searchParams.get("phone");
 

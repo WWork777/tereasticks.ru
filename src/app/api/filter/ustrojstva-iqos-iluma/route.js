@@ -35,20 +35,17 @@ export async function POST(req) {
 
     if (nalichie !== null && nalichie !== undefined) {
       conditions.push("nalichie = ?");
-      // Преобразуем true/false в 1/0
-      params.push(typeof nalichie === "boolean" ? +nalichie : nalichie);
+      params.push(nalichie);
     }
 
     if (exclusive !== null && exclusive !== undefined) {
       conditions.push("exclusive = ?");
-      // Преобразуем true/false в 1/0
-      params.push(typeof exclusive === "boolean" ? +exclusive : exclusive);
+      params.push(exclusive);
     }
 
     if (hit !== null && hit !== undefined) {
       conditions.push("hit = ?");
-      // Преобразуем true/false в 1/0
-      params.push(typeof hit === "boolean" ? +hit : hit);
+      params.push(hit);
     }
 
     if (category && category.length > 0) {

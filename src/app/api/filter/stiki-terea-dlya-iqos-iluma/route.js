@@ -32,7 +32,9 @@ export async function POST(req) {
         }
 
         if (flavors && flavors.length > 0) {
-            const flavorConditions = flavors.map(() => `FIND_IN_SET(?, flavor) > 0`).join(' OR ');
+            const flavorConditions = flavors.map(() =>
+                `? = ANY(string_to_array(flavor, ','))`
+            ).join(' OR ');
             conditions.push(`(${flavorConditions})`);
             params.push(...flavors);
         }
@@ -65,7 +67,7 @@ export async function POST(req) {
         }
 
         if (search) {
-            conditions.push('name LIKE ?');
+            conditions.push(`name ILIKE ?`);
             params.push(`%${search}%`);
         }
 
@@ -85,7 +87,7 @@ export async function POST(req) {
         });
     } catch (error) {
         console.error('Ошибка выполнения запроса:', error.message, error.stack);
-        return new Response(JSON.stringify({ error: 'Ошибка выполнения запроса', details: error.message }), {
+        return new Response(JSON.stringify({ error: 'Ошибка выполнения запроса' }), {
             status: 500,
             headers: { 'Content-Type': 'application/json' },
         });

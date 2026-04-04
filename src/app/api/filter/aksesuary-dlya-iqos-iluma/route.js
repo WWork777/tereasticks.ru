@@ -38,7 +38,7 @@ export async function POST(req) {
         }
 
         if (search) {
-            conditions.push('name LIKE ?');
+            conditions.push(`name ILIKE ?`);
             params.push(`%${search}%`);
         }
 
@@ -59,7 +59,7 @@ export async function POST(req) {
         });
     } catch (error) {
         console.error('Ошибка выполнения запроса:', error.message, error.stack);
-        return new Response(JSON.stringify({ error: 'Ошибка выполнения запроса', details: error.message }), {
+        return new Response(JSON.stringify({ error: 'Ошибка выполнения запроса' }), {
             status: 500,
             headers: { 'Content-Type': 'application/json' },
         });
