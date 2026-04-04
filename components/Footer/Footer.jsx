@@ -1,7 +1,6 @@
 import "./Footer.scss";
 import Link from "next/link";
 import Image from "next/image";
-// import img from './f.png'
 
 export default function Footer() {
   return (
@@ -19,7 +18,6 @@ export default function Footer() {
           <div className="menu-footer">
             <div className="links">
               <Link href={"/products"}>Каталог</Link>
-              {/* <Link href={"/contacts"}>Контакты</Link> */}
               <Link href={"/sales"}>Акции</Link>
               <Link href={"/policy"}>Политика конфиденциальности</Link>
             </div>
@@ -31,24 +29,20 @@ export default function Footer() {
           </div>
           <div className="contacts-footer">
             <div className="footer-tel">
-<<<<<<< HEAD
-              {/* <a href="tel:+7 (995) 153-80-19">+7 (995) 153-80-19</a> */}
-=======
-              <a href="tel:"></a>
->>>>>>> 0973b326fb6b0a246a825d35c68e55f4bbf6ba0b
+              {/* Если нужно вернуть телефон, раскомментируйте строку ниже */}
+              {/* <a href="tel:+79951538019">+7 (995) 153-80-19</a> */}
               <p>
                 Пн-Пт: с 12:00 до 20:00
                 <br />
                 Сб-вс: с 12.00-20.00
               </p>
             </div>
-<<<<<<< HEAD
             <div className="links-contacts">
-              {/* <a href="https://t.me/Ilumastore2025">
-=======
-            {/* <div className="links-contacts">
-              <a href="https://t.me/Ilumastore2025">
->>>>>>> 0973b326fb6b0a246a825d35c68e55f4bbf6ba0b
+              <a
+                href="https://t.me/Ilumastore2025"
+                target="_blank"
+                rel="noreferrer"
+              >
                 <svg
                   width="35"
                   height="35"
@@ -62,7 +56,11 @@ export default function Footer() {
                   />
                 </svg>
               </a>
-              <a href="https://api.whatsapp.com/send/?phone=79951538019&text=Здравствуйте%21+Хочу+оформить+заказ&type=phone_number&app_absent=0">
+              <a
+                href="https://api.whatsapp.com/send/?phone=79951538019&text=Здравствуйте%21+Хочу+оформить+заказ"
+                target="_blank"
+                rel="noreferrer"
+              >
                 <svg
                   width="36"
                   height="35"
@@ -75,17 +73,11 @@ export default function Footer() {
                     fill="white"
                   />
                 </svg>
-<<<<<<< HEAD
-              </a> */}
-            </div>
-=======
               </a>
-            </div> */}
->>>>>>> 0973b326fb6b0a246a825d35c68e55f4bbf6ba0b
+            </div>
           </div>
         </div>
         <div className="footer-bottom">
-          {/* <Image src={img} width={200} height={50} alt='18 плюс'></Image> */}
           <p>
             Федеральный закон Российской Федерации от 23 февраля 2013 г. N 15-ФЗ
             "Об охране здоровья граждан от воздействия окружающего табачного
