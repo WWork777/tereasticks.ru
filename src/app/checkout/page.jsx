@@ -1,14 +1,14 @@
 "use client";
 
 import "./style.scss";
-import { useContext, useRef, useState, useMemo, useEffect } from "react";
+import { useContext, useRef, useState, useMemo } from "react";
 import { CartContext } from "@/cart/add/cart";
 import "react-phone-input-2/lib/style.css";
 import PhoneInput from "react-phone-input-2";
 import Link from "next/link";
 import moscowCities from "./city.js";
 
-// Создаем Set для быстрой проверки городов (из вашего первого кода)
+// Создаем Set для быстрой проверки городов
 const moscowCitiesSet = new Set(
   moscowCities.map((city) => city.toLowerCase().trim()),
 );
@@ -17,14 +17,17 @@ const CheckoutPage = () => {
   const [selectedMethod, setSelectedMethod] = useState("delivery");
   const [loading, setLoading] = useState(false);
 
-  // Состояния для защиты от ботов (требование вашего API)
+  // Состояния для защиты от ботов
   const [honeypot, setHoneypot] = useState("");
   const [formLoadedAt] = useState(() => Date.now());
   const [mouseMovements, setMouseMovements] = useState(0);
 
   const { cartItems, clearCart, calculateTotalPrice } = useContext(CartContext);
 
-  const totalPrice = useMemo(() => calculateTotalPrice(), [cartItems]);
+  const totalPrice = useMemo(
+    () => calculateTotalPrice(),
+    [cartItems, calculateTotalPrice],
+  );
   const formRef = useRef(null);
 
   const [formData, setFormData] = useState({
@@ -38,7 +41,7 @@ const CheckoutPage = () => {
 
   const [errors, setErrors] = useState({});
 
-  // Вспомогательные переменные для логики доступности полей (из вашего кода)
+  // Логика доступности полей
   const totalQuantity = cartItems
     .filter((item) => item.type === "Пачка")
     .reduce((acc, item) => acc + item.quantity, 0);
@@ -47,7 +50,6 @@ const CheckoutPage = () => {
     (item) => item.type === "Пачка" || item.type === "Блок",
   );
 
-  // Скролл к ошибке
   const scrollToElement = (element) => {
     if (element) {
       element.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -55,7 +57,6 @@ const CheckoutPage = () => {
     }
   };
 
-  // Валидация
   const validateForm = () => {
     const newErrors = {};
     let firstErrorElement = null;
@@ -89,7 +90,6 @@ const CheckoutPage = () => {
     return true;
   };
 
-  // Функция решения PoW Challenge (КРИТИЧНО для вашего API)
   const solveChallenge = async () => {
     try {
       const res = await fetch("/api/challenge");
@@ -126,7 +126,7 @@ const CheckoutPage = () => {
     if (loading) return;
     setLoading(true);
 
-    // 1. Проверка настроек сайта (из вашего API)
+    // 1. Проверка настроек сайта
     try {
       const settingsRes = await fetch("/api/settings");
       const settingsData = await settingsRes.json();
@@ -140,14 +140,13 @@ const CheckoutPage = () => {
       }
     } catch (err) {}
 
-    // 2. Анти-бот фильтры (требование API)
+    // 2. Анти-бот фильтры
     if (honeypot || Date.now() - formLoadedAt < 3000 || mouseMovements < 3) {
       setLoading(false);
       return;
     }
 
     if (validateForm()) {
-      // 3. Решение крипто-задачи (без этого API вернет 403)
       const pow = await solveChallenge();
       if (!pow) {
         alert("Ошибка безопасности. Пожалуйста, обновите страницу.");
@@ -158,17 +157,9 @@ const CheckoutPage = () => {
       const phoneNorm = formData.phoneNumber.replace(/\D/g, "");
       const phoneE164 = `+${phoneNorm}`;
       const currentTotalPrice = calculateTotalPrice();
+      const cleanTelegram = formData.telegram.trim().replace(/^@/, "");
 
-      // Подготовка Telegram (убираем @ для базы, но оставляем для отчетов)
-      const rawTelegram = formData.telegram.trim();
-      const cleanTelegram = rawTelegram.replace(/^@/, "");
-      const telegramForReport = rawTelegram
-        ? rawTelegram.startsWith("@")
-          ? rawTelegram
-          : `@${rawTelegram}`
-        : "не указан";
-
-      // Тексты для уведомлений (сохраняем ваши оригинальные сообщения)
+      // Тексты для доп. уведомлений (Email/WhatsApp)
       const formattedCart = cartItems
         .map(
           (item) =>
@@ -180,41 +171,18 @@ const CheckoutPage = () => {
         formData.city &&
         moscowCitiesSet.has(formData.city.toLowerCase().trim());
 
-      const reportMessage = `
-Заказ с сайта tereasticks.ru
-📋 НОВЫЙ ЗАКАЗ
-
-Имя: ${formData.lastName}
-Телефон: ${phoneE164}
-Telegram: ${telegramForReport}
-Город: ${formData.city}
-${formData.comment ? `Комментарий: ${formData.comment}` : ""}
-
-Корзина:
-${formattedCart}
-
-Общая сумма: ${currentTotalPrice} ₽
-      `;
+      const reportMessage = `Новый заказ: ${formData.lastName}\nТел: ${phoneE164}\nГород: ${formData.city}\nКорзина:\n${formattedCart}\nСумма: ${currentTotalPrice} ₽`;
 
       try {
-        // Отправка уведомлений (параллельно)
+        // Запускаем доп. уведомления
         Promise.allSettled([
           fetch("/api/email", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ text: reportMessage }),
           }),
-          fetch("/api/telegram-proxi", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              chat_id: "-1002155675591",
-              text: reportMessage,
-              parse_mode: "HTML",
-            }),
-          }),
           (async () => {
-            // Ваша логика WhatsApp с проверкой региона
+            // ВОССТАНОВЛЕННАЯ ЛОГИКА WHATSAPP (КАК БЫЛО РАНЬШЕ)
             let autoReply = "";
             if (
               !isMoscowCity &&
@@ -225,6 +193,7 @@ ${formattedCart}
             } else {
               autoReply = `Здравствуйте! \n\nПолучили ваше бронирование \n*❗️КОГДА И ПО КАКОМУ АДРЕСУ ВАМ УДОБНО ПОЛУЧИТЬ ЗАКАЗ?❗️*\n*❗️СТОИМОСТЬ ДОСТАВКИ ЗАВИСИТ ОТ АДРЕСА И БУДЕТ С ВАМИ СОГЛАСОВАНА❗️*`;
             }
+
             const waFull = `${autoReply}\n\n📦 СОСТАВ ЗАКАЗА:\n${formattedCart}\n\n💰 Сумма: ${currentTotalPrice} ₽\n\n👤 Имя: ${formData.lastName}\n🏙 Город: ${formData.city}`;
 
             await fetch(
@@ -241,28 +210,31 @@ ${formattedCart}
           })(),
         ]);
 
-        // 4. ГЛАВНЫЙ ЗАПРОС В ВАШЕ API (БАЗА ДАННЫХ)
+        // 3. ГЛАВНЫЙ ЗАПРОС: Сохранение в БД + Авто-отправка в Телеграм сервером
         const orderDataForDb = {
           customer_name: formData.lastName.trim(),
           phone_number: phoneE164,
           is_delivery: selectedMethod === "delivery" ? 1 : 0,
           city: formData.city.trim(),
-          address: formData.streetAddress.trim() || "Доставка",
+          address:
+            formData.streetAddress.trim() ||
+            (selectedMethod === "delivery" ? "Доставка" : "Самовывоз"),
           total_amount: Number(currentTotalPrice),
           contact_method: "whatsapp",
-          telegram_username: cleanTelegram || "",
+          telegram_username: cleanTelegram,
           pickup_date: new Date().toLocaleDateString("ru-RU"),
           pickup_time: new Date().toLocaleTimeString("ru-RU", {
             hour: "2-digit",
             minute: "2-digit",
           }),
-          comment: formData.comment.trim() || "",
+          comment: formData.comment.trim(),
           ordered_items: cartItems.map((item) => ({
-            product_name: `${item.name} (${item.type || "обычный"})`,
+            name: item.name,
             quantity: Number(item.quantity),
-            price_at_time_of_order: Number(item.price),
+            price: Number(item.price),
+            type: item.type || "обычный",
           })),
-          website: honeypot, // Если заполнено, API распознает бота
+          website: honeypot,
           _pow: pow,
           _ts: formLoadedAt,
         };
@@ -273,21 +245,20 @@ ${formattedCart}
           body: JSON.stringify(orderDataForDb),
         });
 
+        const resData = await dbRes.json();
+
         if (dbRes.ok) {
           alert(
-            "✅ Ваш заказ успешно оформлен!\nМенеджер свяжется с вами в ближайшее время.",
+            `✅ Заказ №${resData.orderId} успешно оформлен!\nМенеджер свяжется с вами.`,
           );
           clearCart();
           window.location.href = "/";
         } else {
-          const errData = await dbRes.json();
-          alert(`⚠️ Ошибка: ${errData.error || "не удалось сохранить заказ"}`);
+          alert(`⚠️ Ошибка: ${resData.error || "не удалось сохранить заказ"}`);
         }
       } catch (error) {
         console.error("Submit error:", error);
-        alert(
-          "Произошла ошибка. Пожалуйста, попробуйте позже или свяжитесь с нами напрямую.",
-        );
+        alert("Произошла ошибка при отправке. Попробуйте еще раз.");
       } finally {
         setLoading(false);
       }
@@ -305,14 +276,11 @@ ${formattedCart}
         <div className="plitka">
           <h1>Оформление заказа</h1>
           <h5>
-            Уважаемые покупатели, в связи с законодательством выбор способов
-            доставки ограничен. Заполните данные, менеджер свяжется с вами для
-            уточнения деталей.
+            Уважаемые покупатели, заполните данные, менеджер свяжется с вами.
           </h5>
         </div>
 
         <form onSubmit={handleSubmit} ref={formRef}>
-          {/* Honeypot скрытое поле */}
           <input
             type="text"
             style={{ display: "none" }}
@@ -323,7 +291,6 @@ ${formattedCart}
 
           <div className="checkout-name">
             <h4>Контактные данные</h4>
-
             <input
               type="text"
               name="lastName"
@@ -339,10 +306,10 @@ ${formattedCart}
               placeholder="Telegram (необязательно)"
               value={formData.telegram}
               onChange={handleInputChange}
-              onFocus={() => {
-                if (!formData.telegram)
-                  setFormData((p) => ({ ...p, telegram: "@" }));
-              }}
+              onFocus={() =>
+                !formData.telegram &&
+                setFormData((p) => ({ ...p, telegram: "@" }))
+              }
             />
 
             <PhoneInput
@@ -404,14 +371,18 @@ ${formattedCart}
 
             <button
               className="submit-btn"
-              onClick={() => formRef.current.requestSubmit()}
+              onClick={() =>
+                formRef.current.dispatchEvent(
+                  new Event("submit", { cancelable: true, bubbles: true }),
+                )
+              }
               disabled={loading}
             >
-              {loading ? "Загрузка..." : "Оформить заказ"}
+              {loading ? "Обработка..." : "Оформить заказ"}
             </button>
 
             <p className="bot-link">
-              Или используйте наш{" "}
+              Или наш{" "}
               <Link href="https://t.me/ilumaStore_official_bot">
                 Telegram бот
               </Link>
@@ -439,7 +410,6 @@ ${formattedCart}
           border-radius: 8px;
           font-weight: 600;
           cursor: pointer;
-          transition: opacity 0.2s;
         }
         .submit-btn:disabled {
           opacity: 0.6;
@@ -449,9 +419,6 @@ ${formattedCart}
           text-align: center;
           margin-top: 15px;
           font-size: 14px;
-        }
-        .bot-link a {
-          text-decoration: underline;
         }
         textarea {
           width: 100%;
