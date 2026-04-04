@@ -35,17 +35,17 @@ export async function POST(req) {
 
     if (nalichie !== null && nalichie !== undefined) {
       conditions.push("nalichie = ?");
-      params.push(nalichie);
+      params.push(nalichie === true ? 1 : 0); // Явное приведение к 1/0
     }
 
     if (exclusive !== null && exclusive !== undefined) {
       conditions.push("exclusive = ?");
-      params.push(exclusive);
+      params.push(exclusive === true ? 1 : 0); // Явное приведение к 1/0
     }
 
     if (hit !== null && hit !== undefined) {
       conditions.push("hit = ?");
-      params.push(hit);
+      params.push(hit === true ? 1 : 0); // Явное приведение к 1/0
     }
 
     if (category && category.length > 0) {
