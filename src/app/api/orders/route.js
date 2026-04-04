@@ -105,7 +105,6 @@ ${headerStatus}
 Telegram: ${tgName}
 Способ доставки: ${orderData.is_delivery ? "Доставка" : "Самовывоз"}
 Город: ${orderData.city}
-Адрес: ${orderData.address}
 ${orderData.comment ? `Комментарий: ${orderData.comment}\n` : ""}
 Корзина:
 ${itemsText}
