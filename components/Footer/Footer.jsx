@@ -31,15 +31,24 @@ export default function Footer() {
           </div>
           <div className="contacts-footer">
             <div className="footer-tel">
+<<<<<<< HEAD
               {/* <a href="tel:+7 (995) 153-80-19">+7 (995) 153-80-19</a> */}
+=======
+              <a href="tel:"></a>
+>>>>>>> 0973b326fb6b0a246a825d35c68e55f4bbf6ba0b
               <p>
                 Пн-Пт: с 12:00 до 20:00
                 <br />
                 Сб-вс: с 12.00-20.00
               </p>
             </div>
+<<<<<<< HEAD
             <div className="links-contacts">
               {/* <a href="https://t.me/Ilumastore2025">
+=======
+            {/* <div className="links-contacts">
+              <a href="https://t.me/Ilumastore2025">
+>>>>>>> 0973b326fb6b0a246a825d35c68e55f4bbf6ba0b
                 <svg
                   width="35"
                   height="35"
@@ -66,8 +75,13 @@ export default function Footer() {
                     fill="white"
                   />
                 </svg>
+<<<<<<< HEAD
               </a> */}
             </div>
+=======
+              </a>
+            </div> */}
+>>>>>>> 0973b326fb6b0a246a825d35c68e55f4bbf6ba0b
           </div>
         </div>
         <div className="footer-bottom">

@@ -125,8 +125,13 @@ export default function Header() {
           </button>
 
           <div className="contacts-container">
+<<<<<<< HEAD
             <div className="icons">
               {/* <a href="https://t.me/Ilumastore2025">
+=======
+            {/* <div className="icons">
+              <a href="https://t.me/Ilumastore2025">
+>>>>>>> 0973b326fb6b0a246a825d35c68e55f4bbf6ba0b
                 <svg
                   className="head-tg"
                   xmlns="http://www.w3.org/2000/svg"
@@ -187,11 +192,19 @@ export default function Header() {
                   </g>
                   <g id="Layer_1" />
                 </svg>
+<<<<<<< HEAD
               </a> */}
             </div>
             {/* <div className="tel">
               <a href="tel:+7 (995) 153-80-19">+7 (995) 153-80-19</a>
             </div> */}
+=======
+              </a>
+            </div> */}
+            <div className="tel">
+              <a href="tel:"></a>
+            </div>
+>>>>>>> 0973b326fb6b0a246a825d35c68e55f4bbf6ba0b
           </div>
         </div>
       </header>
@@ -273,7 +286,7 @@ export default function Header() {
               Контакты
             </Link> */}
             <div className="footer-contacts">
-              <div className="contacts-container">
+              {/* <div className="contacts-container">
                 <div className="icons">
                   {/* <a href="https://t.me/Ilumastore2025">
                     <svg
@@ -338,10 +351,17 @@ export default function Header() {
                     </svg>
                   </a> */}
                 </div>
+<<<<<<< HEAD
                 {/* <div className="tel">
                   <a href="tel:+7 (995) 153-80-19">+7 (995) 153-80-19</a>
                 </div> */}
               </div>
+=======
+                <div className="tel">
+                  <a href="tel:"></a>
+                </div>
+              </div> */}
+>>>>>>> 0973b326fb6b0a246a825d35c68e55f4bbf6ba0b
             </div>
           </div>
         </div>
