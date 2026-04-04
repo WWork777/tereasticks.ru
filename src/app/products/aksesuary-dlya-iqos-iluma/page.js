@@ -1,4 +1,5 @@
 import ClientFilters from "./client";
+import { Suspense } from "react";
 
 export const metadataBase = new URL(
   process.env.NODE_ENV === "production"
@@ -46,7 +47,9 @@ export default function Page() {
       <h1 className="page-title">
         Аксессуары для IQOS ILUMA купить в Москве и России
       </h1>
-      <ClientFilters apiUrl="/api/products/getdevices" />
+      <Suspense fallback={<div>Загрузка фильтров...</div>}>
+        <ClientFilters apiUrl="/api/products/getdevices" />
+      </Suspense>
     </div>
   );
 }
