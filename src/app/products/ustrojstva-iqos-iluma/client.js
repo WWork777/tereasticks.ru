@@ -7,11 +7,11 @@ import ProductGrid from "../components/productgrid";
 import useDebounce from "../../hooks/useDebounce";
 import { useSearchParams, useRouter } from "next/navigation";
 
-export default function ClientFilters({ items: initialItems }) {
-  const [items, setItems] = useState(initialItems);
-  const [loading, setLoading] = useState(false);
+export default function ClientFilters({ apiUrl }) {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
+  const [isAgeVerified, setIsAgeVerified] = useState(false);
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -135,7 +135,7 @@ export default function ClientFilters({ items: initialItems }) {
 
         if (!res.ok) throw new Error("Ошибка фильтрации");
         const result = await res.json();
-        setItems(result);
+        setItems(Array.isArray(result) ? result : []);
       } catch (error) {
         console.error(error);
         setError("Не удалось выполнить фильтрацию");
@@ -146,6 +146,14 @@ export default function ClientFilters({ items: initialItems }) {
     [debouncedQuery, selectedCategory, sortOrder, filters],
   );
 
+  useEffect(() => {
+    const check = () =>
+      setIsAgeVerified(localStorage.getItem("ageVerified") === "true");
+    check();
+    window.addEventListener("ageVerified", check);
+    return () => window.removeEventListener("ageVerified", check);
+  }, []);
+
   // Обновление URL при изменении состояния
   useEffect(() => {
     updateURL();
@@ -153,21 +161,7 @@ export default function ClientFilters({ items: initialItems }) {
 
   // Автоматическое применение фильтров при изменении
   useEffect(() => {
-    const hasActiveFilters =
-      debouncedQuery ||
-      selectedCategory.length > 0 ||
-      sortOrder !== "default" ||
-      filters.priceRange.min > 0 ||
-      filters.priceRange.max < 35000 ||
-      filters.colors.length > 0 ||
-      filters.models.length > 0 ||
-      filters.nalichie !== null ||
-      filters.exclusive !== null ||
-      filters.hit !== null;
-
-    if (hasActiveFilters) {
-      fetchFilteredData();
-    }
+    fetchFilteredData();
   }, [debouncedQuery, selectedCategory, sortOrder, filters, fetchFilteredData]);
 
   const resetFilters = useCallback(() => {
@@ -206,7 +200,7 @@ export default function ClientFilters({ items: initialItems }) {
         return res.json();
       })
       .then((result) => {
-        setItems(result);
+        setItems(Array.isArray(result) ? result : []);
       })
       .catch((error) => {
         console.error("Ошибка при сбросе фильтров:", error);
@@ -262,7 +256,12 @@ export default function ClientFilters({ items: initialItems }) {
             <div className="spinner"></div>
           </div>
         ) : (
-          <ProductGrid items={items} loading={loading} />
+          <ProductGrid
+            items={items}
+            loading={loading}
+            isAgeVerified={isAgeVerified}
+            setIsAgeVerified={setIsAgeVerified}
+          />
         )}
       </div>
     </>

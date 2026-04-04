@@ -7,15 +7,15 @@ import ProductGrid from "../components/productgrid";
 import useDebounce from "../../hooks/useDebounce";
 import { useSearchParams, useRouter } from "next/navigation";
 
-export default function ClientFilters({ items: initialItems }) {
-  const [items, setItems] = useState(initialItems);
-  const [loading, setLoading] = useState(false);
+export default function ClientFilters({ apiUrl }) {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  // Восстановление из URL
+  // --- Восстановление из URL ---
   const [selectedCategory, setSelectedCategory] = useState(
     () => searchParams.getAll("category") || [],
   );
@@ -44,9 +44,19 @@ export default function ClientFilters({ items: initialItems }) {
     };
   });
 
+  // ✅ Состояние проверки возраста
+  const [isAgeVerified, setIsAgeVerified] = useState(false);
+  useEffect(() => {
+    const check = () =>
+      setIsAgeVerified(localStorage.getItem("ageVerified") === "true");
+    check();
+    window.addEventListener("ageVerified", check);
+    return () => window.removeEventListener("ageVerified", check);
+  }, []);
+
   const debouncedQuery = useDebounce(searchQuery, 1000);
 
-  // Обновление URL
+  // --- Обновление URL ---
   const updateURL = useCallback(() => {
     const params = new URLSearchParams();
 
@@ -82,7 +92,7 @@ export default function ClientFilters({ items: initialItems }) {
 
         if (!res.ok) throw new Error("Ошибка фильтрации");
         const result = await res.json();
-        setItems(result);
+        setItems(Array.isArray(result) ? result : []);
       } catch (error) {
         console.error(error);
         setError("Не удалось выполнить фильтрацию");
@@ -95,7 +105,7 @@ export default function ClientFilters({ items: initialItems }) {
 
   useEffect(() => {
     fetchFilteredData();
-  }, [debouncedQuery, selectedCategory, sortOrder, filters]);
+  }, [debouncedQuery, selectedCategory, sortOrder, filters, fetchFilteredData]);
 
   useEffect(() => {
     updateURL();
@@ -151,7 +161,13 @@ export default function ClientFilters({ items: initialItems }) {
             <div className="spinner"></div>
           </div>
         ) : (
-          <ProductGrid items={items} loading={loading} />
+          // ✅ Передаем состояние возраста
+          <ProductGrid
+            items={items}
+            loading={loading}
+            isAgeVerified={isAgeVerified}
+            setIsAgeVerified={setIsAgeVerified}
+          />
         )}
       </div>
     </>

@@ -1,126 +1,96 @@
 export const dynamic = "force-dynamic";
 import ClientFilters from "./client";
+import db from "@/lib/db"; // Импортируем твой адаптер БД
 
-// Безопасный fetch с таймаутом
-async function safeFetch(url, options = {}) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 5000); // 5 секунд таймаут
-
-  try {
-    const response = await fetch(url, {
-      ...options,
-      signal: controller.signal,
-    });
-    clearTimeout(timeout);
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-    return await response.json();
-  } catch (error) {
-    clearTimeout(timeout);
-    throw error;
-  }
-}
-
-async function fetchItems() {
-  // ВАЖНО: В продакшене внутри Docker используем localhost!
-  const baseUrl =
-    process.env.NODE_ENV === "production" && typeof window === "undefined"
-      ? "http://localhost:3008" // порт tereasticks.ru контейнера
-      : ""; // в браузере или разработке - относительный путь
-
-  try {
-    return await safeFetch(`${baseUrl}/api/products/getterea`, {
-      cache: "no-store",
-    });
-  } catch (error) {
-    console.error("Fetch error for heets:", error.message);
-    throw new Error("Ошибка загрузки товаров");
-  }
-}
+// Настройка метаданных
+export const metadataBase = new URL(
+  process.env.NODE_ENV === "production"
+    ? "https://iluma-store.ru"
+    : "http://localhost:3000",
+);
 
 export async function generateMetadata() {
-  const title = "Купить стики Heets в TereaSticks с доставкой по России";
-
+  const title = "Купить стики Heets в ТереяСтикс с доставкой по России";
   return {
     title,
     description:
-      "Каталог стиков Heets с доставкой по Москве. Лучший выбор вкусов и брендов!",
+      "Каталог стиков Heets с доставкой по всей России. Лучший выбор вкусов и брендов!",
     alternates: {
       canonical: `https://tereasticks.ru/products/heets`,
     },
     openGraph: {
       title,
-      description:
-        "Каталог стиков Heets с доставкой по Москве. Лучший выбор вкусов и брендов!",
+      description: "Каталог стиков Heets с доставкой по всей России.",
       url: `https://tereasticks.ru/products/heets`,
-      images: [
-        {
-          url: `https://tereasticks.ru/favicon/web-app-manifest-512x512.png`,
-          alt: `Heets стики`,
-        },
-      ],
+      images: [{ url: `/favicon/og-image.png`, alt: `Ilumastore` }],
     },
   };
+}
+
+// Функция получения данных напрямую из Postgres
+async function getHeetsData() {
+  try {
+    // ВНИМАНИЕ: Проверь имя таблицы в БД.
+    // Если таблица называется Terea, пишем "Terea". Если Heets — пишем "Heets".
+    // Двойные кавычки обязательны для соблюдения регистра в PostgreSQL.
+    const [rows] = await db.query('SELECT * FROM "terea"');
+    return rows;
+  } catch (error) {
+    console.error("Database connection error in Heets page:", error);
+    throw error; // Пробрасываем ошибку в блок catch компонента
+  }
 }
 
 export default async function Page() {
   let items = [];
 
   try {
-    items = await fetchItems();
+    // Получаем данные напрямую без посредника в виде API маршрута
+    items = await getHeetsData();
   } catch (error) {
-    console.error("Page fetch error:", error);
-
-    // ✅ Возвращаем полноценный компонент ошибки
     return (
-      <div
-        style={{
-          minHeight: "60vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "2rem",
-          textAlign: "center",
-        }}
-      >
-        <div>
-          <h1
-            style={{
-              fontSize: "1.5rem",
-              fontWeight: "bold",
-              marginBottom: "1rem",
-            }}
-          >
-            Ошибка загрузки каталога
-          </h1>
-          <p style={{ marginBottom: "1.5rem", color: "#666" }}>
-            Не удалось загрузить список стиков Heets. Пожалуйста, попробуйте
-            позже.
-          </p>
-          <a
-            href="/"
-            style={{
-              display: "inline-block",
-              backgroundColor: "#3b82f6",
-              color: "white",
-              padding: "0.5rem 1rem",
-              borderRadius: "0.375rem",
-              textDecoration: "none",
-            }}
-          >
-            На главную
-          </a>
-        </div>
+      <div style={{ padding: "40px", textAlign: "center" }}>
+        <h1>Ошибка загрузки данных</h1>
+        <p>
+          Не удалось подключиться к базе данных. Проверьте настройки
+          подключения.
+        </p>
+        <a
+          href="/products"
+          style={{ color: "blue", textDecoration: "underline" }}
+        >
+          Вернуться в каталог
+        </a>
+      </div>
+    );
+  }
+
+  // Если данных нет (пустой массив)
+  if (!items || items.length === 0) {
+    return (
+      <div style={{ padding: "40px", textAlign: "center" }}>
+        <h1>Товары не найдены</h1>
+        <p>На данный момент в категории Heets нет доступных товаров.</p>
+        <a href="/" style={{ color: "blue" }}>
+          На главную
+        </a>
       </div>
     );
   }
 
   return (
     <div className="products-container">
-      {/* Исправил: убрал z-index -9999, это плохо для SEO */}
-      <h1 className="page-title">Стики Heets с доставкой по России</h1>
+      {/* Скрытый заголовок для SEO, если нужно */}
+      <h1
+        style={{
+          position: "absolute",
+          width: "1px",
+          height: "1px",
+          overflow: "hidden",
+        }}
+      >
+        Стики Heets для IQOS
+      </h1>
       <ClientFilters items={items} />
     </div>
   );

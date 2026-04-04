@@ -31,7 +31,6 @@ export default function Products() {
       <div className="products-catalog-container">
         <h1>Каталог товаров</h1>
         <Preview />
-        <h2>Популярное</h2>
         <Exclusive />
       </div>
     </>

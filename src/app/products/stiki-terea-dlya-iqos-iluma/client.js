@@ -7,23 +7,32 @@ import ProductGrid from "../components/productgrid";
 import useDebounce from "../../hooks/useDebounce";
 import { useSearchParams, useRouter } from "next/navigation";
 
-export default function ClientFilters({ items: initialItems }) {
-  const [items, setItems] = useState(initialItems);
-  const [loading, setLoading] = useState(false);
+export default function ClientFilters({ apiUrl }) {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const searchParams = useSearchParams();
   const router = useRouter();
 
-  // --- Инициализация состояния с защитой от undefined ---
+  // --- Состояние проверки возраста ---
+  const [isAgeVerified, setIsAgeVerified] = useState(false);
+
+  useEffect(() => {
+    const check = () =>
+      setIsAgeVerified(localStorage.getItem("ageVerified") === "true");
+    check();
+    window.addEventListener("ageVerified", check);
+    return () => window.removeEventListener("ageVerified", check);
+  }, []);
+
+  // --- Фильтры и состояние поиска ---
   const [selectedCountries, setSelectedCountries] = useState(
     searchParams.getAll("countries") || [],
   );
-
   const [searchQuery, setSearchQuery] = useState(
     searchParams.get("search") || "",
   );
-
   const [sortOrder, setSortOrder] = useState(
     searchParams.get("sort") || "default",
   );
@@ -65,24 +74,24 @@ export default function ClientFilters({ items: initialItems }) {
   const updateURL = useCallback(() => {
     const params = new URLSearchParams();
 
-    (selectedCountries || []).forEach((c) => params.append("countries", c));
+    selectedCountries.forEach((c) => params.append("countries", c));
     if (searchQuery) params.set("search", searchQuery);
     if (sortOrder && sortOrder !== "default") params.set("sort", sortOrder);
 
-    if (filters?.priceRange?.min > 0)
+    if (filters.priceRange.min > 0)
       params.set("priceMin", filters.priceRange.min);
-    if (filters?.priceRange?.max < 12000)
+    if (filters.priceRange.max < 12000)
       params.set("priceMax", filters.priceRange.max);
 
-    (filters?.flavors || []).forEach((f) => params.append("flavors", f));
-    (filters?.strengths || []).forEach((s) => params.append("strengths", s));
-    (filters?.countrys || []).forEach((c) => params.append("countrys", c));
-    (filters?.brend || []).forEach((b) => params.append("brend", b));
+    filters.flavors.forEach((f) => params.append("flavors", f));
+    filters.strengths.forEach((s) => params.append("strengths", s));
+    filters.countrys.forEach((c) => params.append("countrys", c));
+    filters.brend.forEach((b) => params.append("brend", b));
 
-    if (filters?.hasCapsule !== null)
+    if (filters.hasCapsule !== null)
       params.set("hasCapsule", filters.hasCapsule);
-    if (filters?.nalichie !== null) params.set("nalichie", filters.nalichie);
-    if (filters?.hit !== null) params.set("hit", filters.hit);
+    if (filters.nalichie !== null) params.set("nalichie", filters.nalichie);
+    if (filters.hit !== null) params.set("hit", filters.hit);
 
     router.replace(`?${params.toString()}`, { scroll: false });
   }, [selectedCountries, searchQuery, sortOrder, filters, router]);
@@ -108,7 +117,7 @@ export default function ClientFilters({ items: initialItems }) {
         });
         if (!res.ok) throw new Error("Ошибка фильтрации");
         const result = await res.json();
-        setItems(result);
+        setItems(Array.isArray(result) ? result : []);
       } catch (e) {
         console.error(e);
         setError("Не удалось выполнить фильтрацию");
@@ -158,7 +167,7 @@ export default function ClientFilters({ items: initialItems }) {
       }),
     })
       .then((res) => res.json())
-      .then((result) => setItems(result))
+      .then((result) => setItems(Array.isArray(result) ? result : []))
       .catch((err) => console.error(err));
   }, [router]);
 
@@ -190,7 +199,12 @@ export default function ClientFilters({ items: initialItems }) {
             <div className="spinner"></div>
           </div>
         ) : (
-          <ProductGrid items={items} />
+          // ✅ Передаём isAgeVerified и setIsAgeVerified
+          <ProductGrid
+            items={items}
+            isAgeVerified={isAgeVerified}
+            setIsAgeVerified={setIsAgeVerified}
+          />
         )}
       </div>
     </>

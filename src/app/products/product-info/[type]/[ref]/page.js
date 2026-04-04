@@ -1,11 +1,10 @@
-export const revalidate = 60;
-
+export const revalidate = 3600;
 import ClientFilters from "./client";
 
-// Безопасный fetch с таймаутом
+// Утилита для безопасного fetch
 async function safeFetch(url, options = {}) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 5000); // 5 секунд таймаут
+  const timeout = setTimeout(() => controller.abort(), 3000);
 
   try {
     const response = await fetch(url, {
@@ -15,7 +14,7 @@ async function safeFetch(url, options = {}) {
     clearTimeout(timeout);
 
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      throw new Error(`HTTP ${response.status}`);
     }
     return await response.json();
   } catch (error) {
@@ -25,18 +24,17 @@ async function safeFetch(url, options = {}) {
 }
 
 async function fetchItems(type, ref) {
-  // ВАЖНО: В продакшене внутри Docker используем localhost!
-  const baseUrl =
-    process.env.NODE_ENV === "production" && typeof window === "undefined"
-      ? "http://localhost:3008" // порт tereasticks.ru контейнера
-      : ""; // в браузере или разработке - относительный путь
+  // ВАЖНО: Использовать внутренний адрес!
+  // Определить адрес в зависимости от среды
+  const isProd = process.env.NODE_ENV === "production";
+  const baseUrl = isProd
+    ? "http://localhost:3001" // Заменить на реальный IP контейнера
+    : "http://localhost:3000";
 
   try {
     return await safeFetch(
       `${baseUrl}/api/products/getproductinfo/${type}/${ref}`,
-      {
-        next: { revalidate: 60 },
-      },
+      { next: { revalidate: 3600 } },
     );
   } catch (error) {
     console.error(`Fetch error for ${type}/${ref}:`, error.message);
@@ -44,99 +42,58 @@ async function fetchItems(type, ref) {
   }
 }
 
-// общий загрузчик
-async function getItems(params) {
-  const { type, ref } = await params; // await params!
-  return fetchItems(type, ref);
-}
-
 export async function generateMetadata({ params }) {
-  let items;
+  const { type, ref } = await params;
 
   try {
-    items = await getItems(params);
-  } catch (e) {
-    console.error("Metadata fetch error:", e);
+    const items = await fetchItems(type, ref);
     return {
-      title: "Купить IQOS стики | Terea Sticks",
-      description: "Оригинальные стики IQOS с доставкой по Москве",
+      title: `Купить ${items.name} с доставкой по России`,
+      description: items.description || `Купить ${items.name}`,
+      alternates: {
+        canonical: `https://tereasticks.ru/products/product-info/${type}/${ref}`,
+      },
+      openGraph: {
+        title: `Купить ${items.name} с доставкой по России`,
+        description: items.description || `Купить ${items.name}`,
+        url: `https://tereasticks.ru/products/product-info/${type}/${ref}`,
+        images: [
+          {
+            url: `https://tereasticks.ru/favicon/og-image.png`,
+            alt: items.name,
+          },
+        ],
+      },
+    };
+  } catch (error) {
+    console.error("generateMetadata error:", error);
+    return {
+      title: "Товар не найден | Iluma Store",
+      description: "Товар не найден",
       robots: { index: false, follow: false },
     };
   }
-
-  return {
-    title: `Купить ${items.name} с доставкой по Москве`,
-    description:
-      items.description || `Купить ${items.name} в магазине Terea Sticks`,
-    alternates: {
-      canonical: `https://tereasticks.ru/products/product-info/${items.type}/${items.ref}`,
-    },
-    openGraph: {
-      title: `Купить ${items.name} с доставкой по Москве`,
-      description:
-        items.description || `Купить ${items.name} в магазине Terea Sticks`,
-      url: `https://tereasticks.ru/products/product-info/${items.type}/${items.ref}`,
-      images: [
-        {
-          url: items.image
-            ? `https://tereasticks.ru/images/${items.image}`
-            : `https://tereasticks.ru/og-image.png`,
-          alt: items.name,
-        },
-      ],
-    },
-  };
 }
 
 export default async function Page({ params }) {
-  let items;
+  const { type, ref } = await params;
 
   try {
-    items = await getItems(params);
-  } catch (e) {
-    console.error("Page fetch error:", e);
+    const items = await fetchItems(type, ref);
+    return <ClientFilters items={items} />;
+  } catch (error) {
+    console.error(`Page error for ${type}/${ref}:`, error);
     return (
-      <div
-        style={{
-          minHeight: "60vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "2rem",
-          textAlign: "center",
-        }}
-      >
-        <div>
-          <h1
-            style={{
-              fontSize: "1.5rem",
-              fontWeight: "bold",
-              marginBottom: "1rem",
-            }}
-          >
-            Товар временно недоступен
-          </h1>
-          <p style={{ marginBottom: "1.5rem", color: "#666" }}>
-            Не удалось загрузить информацию о товаре. Пожалуйста, попробуйте
-            позже.
-          </p>
-          <a
-            href="/products"
-            style={{
-              display: "inline-block",
-              backgroundColor: "#3b82f6",
-              color: "white",
-              padding: "0.5rem 1rem",
-              borderRadius: "0.375rem",
-              textDecoration: "none",
-            }}
-          >
-            Вернуться в каталог
-          </a>
-        </div>
+      <div className="container py-10">
+        <h1 className="text-2xl font-bold mb-4">Товар не найден</h1>
+        <p>К сожалению, не удалось загрузить информацию о товаре.</p>
+        <a
+          href="/products"
+          className="text-blue-500 hover:underline mt-4 inline-block"
+        >
+          Вернуться к каталогу
+        </a>
       </div>
     );
   }
-
-  return <ClientFilters items={items} />;
 }

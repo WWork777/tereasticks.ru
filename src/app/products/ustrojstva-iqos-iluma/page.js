@@ -27,7 +27,7 @@ async function fetchItems() {
   // ВАЖНО: В продакшене внутри Docker используем localhost!
   const baseUrl =
     process.env.NODE_ENV === "production" && typeof window === "undefined"
-      ? "http://localhost:3008" // порт tereasticks.ru контейнера
+      ? "http://localhost:3000" // порт tereasticks.ru контейнера
       : ""; // в браузере или разработке - относительный путь
 
   try {
@@ -67,63 +67,12 @@ export async function generateMetadata() {
 }
 
 export default async function Page() {
-  let items = [];
-
-  try {
-    items = await fetchItems();
-  } catch (error) {
-    console.error("Page fetch error:", error);
-
-    // ✅ Возвращаем полноценный компонент ошибки
-    return (
-      <div
-        style={{
-          minHeight: "60vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "2rem",
-          textAlign: "center",
-        }}
-      >
-        <div>
-          <h1
-            style={{
-              fontSize: "1.5rem",
-              fontWeight: "bold",
-              marginBottom: "1rem",
-            }}
-          >
-            Ошибка загрузки каталога устройств
-          </h1>
-          <p style={{ marginBottom: "1.5rem", color: "#666" }}>
-            Не удалось загрузить список устройств IQOS ILUMA. Пожалуйста,
-            попробуйте позже.
-          </p>
-          <a
-            href="/"
-            style={{
-              display: "inline-block",
-              backgroundColor: "#3b82f6",
-              color: "white",
-              padding: "0.5rem 1rem",
-              borderRadius: "0.375rem",
-              textDecoration: "none",
-            }}
-          >
-            На главную
-          </a>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="products-container">
       <h1 className="page-title">
         Оригинальные устройства IQOS ILUMA — купить в Москве и России
       </h1>
-      <ClientFilters items={items} />
+      <ClientFilters apiUrl="/api/products/getiqos" />
     </div>
   );
 }

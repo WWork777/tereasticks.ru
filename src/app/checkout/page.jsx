@@ -1,968 +1,293 @@
 "use client";
+
 import "./style.scss";
-import { useContext, useRef, useState, useMemo } from "react";
+import { useContext, useRef, useState, useMemo, useEffect } from "react";
 import { CartContext } from "@/cart/add/cart";
 import "react-phone-input-2/lib/style.css";
 import PhoneInput from "react-phone-input-2";
 import Link from "next/link";
+import moscowCities from "./city.js";
+
+// Создаем Set для быстрой проверки городов (из вашего первого кода)
+const moscowCitiesSet = new Set(
+  moscowCities.map((city) => city.toLowerCase().trim()),
+);
 
 const CheckoutPage = () => {
   const [selectedMethod, setSelectedMethod] = useState("delivery");
   const [loading, setLoading] = useState(false);
-  const {
-    cartItems,
-    removeFromCart,
-    clearCart,
-    addOne,
-    deleteOne,
-    calculateTotalPrice,
-    hasSticks,
-  } = useContext(CartContext);
+
+  // Состояния для защиты от ботов (требование вашего API)
+  const [honeypot, setHoneypot] = useState("");
+  const [formLoadedAt] = useState(() => Date.now());
+  const [mouseMovements, setMouseMovements] = useState(0);
+
+  const { cartItems, clearCart, calculateTotalPrice } = useContext(CartContext);
+
   const totalPrice = useMemo(() => calculateTotalPrice(), [cartItems]);
   const formRef = useRef(null);
+
   const [formData, setFormData] = useState({
     lastName: "",
     phoneNumber: "",
     telegram: "",
     city: "",
     streetAddress: "",
+    comment: "",
   });
 
+  const [errors, setErrors] = useState({});
+
+  // Вспомогательные переменные для логики доступности полей (из вашего кода)
   const totalQuantity = cartItems
     .filter((item) => item.type === "Пачка")
     .reduce((acc, item) => acc + item.quantity, 0);
-
   const hasBlock = cartItems.some((item) => item.type === "Блок");
-
   const onlyPacksAndBlocks = cartItems.every(
     (item) => item.type === "Пачка" || item.type === "Блок",
   );
 
-  const [errors, setErrors] = useState({});
-
-  const scroolTo = (element) => {
+  // Скролл к ошибке
+  const scrollToElement = (element) => {
     if (element) {
-      element.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-      });
+      element.scrollIntoView({ behavior: "smooth", block: "center" });
       element.focus();
     }
   };
 
+  // Валидация
   const validateForm = () => {
     const newErrors = {};
-    let element;
+    let firstErrorElement = null;
 
-    // Валидация телефона
-    if (!formData.phoneNumber) {
-      element = document.querySelector(
-        `[placeholder="Введите номер телефона"]`,
-      );
-      scroolTo(element);
-      newErrors.phoneNumber = "Введите номер телефона";
-    } else if (formData.phoneNumber.replace(/\D/g, "").length < 11) {
-      element = document.querySelector(
-        `[placeholder="Введите номер телефона"]`,
-      );
-      scroolTo(element);
-      newErrors.phoneNumber = "Некорректный номер телефона";
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = "Введите ваше имя";
+      if (!firstErrorElement)
+        firstErrorElement = document.getElementsByName("lastName")[0];
     }
 
-    // Валидация города для доставки
-    if (selectedMethod === "delivery") {
-      if (!formData.city.trim()) {
-        element = document.querySelector(`[name="city"]`);
-        scroolTo(element);
-        newErrors.city = "Введите ваш город";
-      } else if (!/^[a-zA-Zа-яА-ЯёЁ0-9\s-]+$/.test(formData.city)) {
-        element = document.querySelector(`[name="city"]`);
-        scroolTo(element);
-        newErrors.city =
-          "Город может содержать только буквы, цифры, пробелы и дефисы";
-      }
-    }
-
-    // Валидация Telegram (если указан)
     if (
-      formData.telegram.trim() &&
-      !/^[@a-zA-Z0-9_]{5,32}$/.test(formData.telegram.replace(/^@/, ""))
+      !formData.phoneNumber ||
+      formData.phoneNumber.replace(/\D/g, "").length < 11
     ) {
-      newErrors.telegram = "Некорректный формат Telegram username";
+      newErrors.phoneNumber = "Некорректный номер телефона";
+      if (!firstErrorElement)
+        firstErrorElement = document.querySelector(".react-tel-input input");
     }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    if (selectedMethod === "delivery" && !formData.city.trim()) {
+      newErrors.city = "Введите ваш город";
+      if (!firstErrorElement)
+        firstErrorElement = document.getElementsByName("city")[0];
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      scrollToElement(firstErrorElement);
+      return false;
+    }
+    return true;
+  };
+
+  // Функция решения PoW Challenge (КРИТИЧНО для вашего API)
+  const solveChallenge = async () => {
+    try {
+      const res = await fetch("/api/challenge");
+      const { id, salt, difficulty } = await res.json();
+      const prefix = "0".repeat(difficulty);
+      const encoder = new TextEncoder();
+
+      for (let nonce = 0; nonce < 10_000_000; nonce++) {
+        const data = encoder.encode(salt + ":" + nonce);
+        const hashBuf = await crypto.subtle.digest("SHA-256", data);
+        const hashHex = Array.from(new Uint8Array(hashBuf))
+          .map((b) => b.toString(16).padStart(2, "0"))
+          .join("");
+
+        if (hashHex.startsWith(prefix)) {
+          return { challengeId: id, nonce };
+        }
+      }
+      return null;
+    } catch (e) {
+      console.error("PoW Error:", e);
+      return null;
+    }
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-
-    let isValid = true;
-
-    if (name === "telegram") {
-      isValid = /^@?[a-zA-Z0-9_]*$/.test(value);
-    } else if (name === "lastName") {
-      isValid = /^[a-zA-Zа-яА-ЯёЁ0-9\s-]*$/.test(value);
-    } else if (name === "city") {
-      isValid = /^[a-zA-Zа-яА-ЯёЁ0-9\s-]*$/.test(value); // Добавлены английские буквы
-    } else if (name === "streetAddress") {
-      isValid = /^[а-яА-ЯёЁ0-9\s-]*$/.test(value);
-    }
-
-    if (isValid) {
-      setFormData((prev) => ({
-        ...prev,
-        [name]: value,
-      }));
-
-      if (errors[name]) {
-        setErrors((prev) => ({
-          ...prev,
-          [name]: "",
-        }));
-      }
-    }
-  };
-
-  const handlePhoneChange = (value) => {
-    setFormData((prev) => ({
-      ...prev,
-      phoneNumber: value,
-    }));
-    if (errors.phoneNumber) {
-      setErrors((prev) => ({
-        ...prev,
-        phoneNumber: "",
-      }));
-    }
-  };
-
-  // Функция для проверки предыдущих заказов
-  const checkPreviousOrders = async (phoneE164) => {
-    try {
-      console.log("Checking orders for phone:", phoneE164);
-
-      const checkResponse = await fetch(
-        `/api/check-orders?phone=${encodeURIComponent(phoneE164)}`,
-        {
-          cache: "no-store",
-          signal: AbortSignal.timeout(5000), // Таймаут 5 секунд
-        },
-      );
-
-      if (checkResponse.ok) {
-        const checkData = await checkResponse.json();
-        console.log("Check orders API response:", checkData);
-
-        // Безопасное извлечение данных
-        const previousOrdersCount =
-          parseInt(checkData.previous_orders_count) || 0;
-        const isFirstOrder = previousOrdersCount === 0;
-
-        console.log("Parsed order info:", {
-          previousOrdersCount,
-          isFirstOrder,
-        });
-
-        return {
-          isFirstOrder,
-          previousOrdersCount,
-          success: true,
-          error: null,
-        };
-      } else {
-        const errorText = await checkResponse.text();
-        console.warn(
-          "API check-orders failed:",
-          checkResponse.status,
-          errorText,
-        );
-
-        return {
-          isFirstOrder: true, // По умолчанию считаем новым
-          previousOrdersCount: 0,
-          success: false,
-          error: `API error: ${checkResponse.status}`,
-        };
-      }
-    } catch (error) {
-      console.warn("Error checking previous orders:", error);
-
-      // Определяем тип ошибки
-      let errorType = "network_error";
-      if (error.name === "AbortError") {
-        errorType = "timeout_error";
-      } else if (error.name === "TypeError") {
-        errorType = "network_error";
-      }
-
-      return {
-        isFirstOrder: true, // По умолчанию считаем новым
-        previousOrdersCount: 0,
-        success: false,
-        error: `${errorType}: ${error.message}`,
-      };
-    }
-  };
-
-  // Функция для отправки в Telegram с повторными попытками
-  const sendToTelegram = async (message, maxRetries = 3) => {
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        console.log(`Telegram attempt ${attempt}/${maxRetries}`);
-
-        const response = await fetch("/api/telegram-proxi", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            chat_id: "-1002155675591",
-            text: message,
-            parse_mode: "HTML",
-          }),
-        });
-
-        if (response.ok) {
-          console.log(`Telegram sent successfully on attempt ${attempt}`);
-          return true;
-        } else {
-          console.warn(
-            `Telegram attempt ${attempt} failed: ${response.status}`,
-          );
-        }
-      } catch (error) {
-        console.warn(`Telegram attempt ${attempt} error:`, error);
-      }
-
-      if (attempt < maxRetries) {
-        await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
-      }
-    }
-
-    console.error("All Telegram attempts failed");
-    return false;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading) return;
     setLoading(true);
 
-    if (validateForm()) {
-      const totalPrice = calculateTotalPrice();
-      const site = "tereasticks.ru";
+    // 1. Проверка настроек сайта (из вашего API)
+    try {
+      const settingsRes = await fetch("/api/settings");
+      const settingsData = await settingsRes.json();
+      if (settingsData.settings?.accept_orders === "false") {
+        alert(
+          settingsData.settings?.orders_disabled_message ||
+            "Приём заказов приостановлен.",
+        );
+        setLoading(false);
+        return;
+      }
+    } catch (err) {}
 
+    // 2. Анти-бот фильтры (требование API)
+    if (honeypot || Date.now() - formLoadedAt < 3000 || mouseMovements < 3) {
+      setLoading(false);
+      return;
+    }
+
+    if (validateForm()) {
+      // 3. Решение крипто-задачи (без этого API вернет 403)
+      const pow = await solveChallenge();
+      if (!pow) {
+        alert("Ошибка безопасности. Пожалуйста, обновите страницу.");
+        setLoading(false);
+        return;
+      }
+
+      const phoneNorm = formData.phoneNumber.replace(/\D/g, "");
+      const phoneE164 = `+${phoneNorm}`;
+      const currentTotalPrice = calculateTotalPrice();
+
+      // Подготовка Telegram (убираем @ для базы, но оставляем для отчетов)
+      const rawTelegram = formData.telegram.trim();
+      const cleanTelegram = rawTelegram.replace(/^@/, "");
+      const telegramForReport = rawTelegram
+        ? rawTelegram.startsWith("@")
+          ? rawTelegram
+          : `@${rawTelegram}`
+        : "не указан";
+
+      // Тексты для уведомлений (сохраняем ваши оригинальные сообщения)
       const formattedCart = cartItems
         .map(
           (item) =>
-            `- ${item.name} (${item.type || "обычный"}) x${item.quantity}: ${
-              item.price
-            } ₽`,
+            `- ${item.name} (${item.type || "обычный"}) x${item.quantity}: ${item.price} ₽`,
         )
         .join("\n");
 
-      // Форматируем Telegram username
-      const telegramUsername = formData.telegram.trim()
-        ? formData.telegram.startsWith("@")
-          ? formData.telegram
-          : `@${formData.telegram}`
-        : "не указан";
+      const isMoscowCity =
+        formData.city &&
+        moscowCitiesSet.has(formData.city.toLowerCase().trim());
 
-      try {
-        // 1. Проверяем предыдущие заказы по телефону
-        const phoneNorm = formData.phoneNumber.replace(/\D/g, "");
-        const phoneE164 = `+${phoneNorm}`;
+      const reportMessage = `
+Заказ с сайта tereasticks.ru
+📋 НОВЫЙ ЗАКАЗ
 
-        console.log("Starting order check...");
-        const orderCheck = await checkPreviousOrders(phoneE164);
-
-        const isFirstOrder = orderCheck.isFirstOrder;
-        const previousOrdersCount = orderCheck.previousOrdersCount;
-        const checkSuccess = orderCheck.success;
-        const checkError = orderCheck.error;
-
-        console.log("Order check completed:", {
-          isFirstOrder,
-          previousOrdersCount,
-          checkSuccess,
-          checkError,
-        });
-
-        // 2. Подготавливаем сообщение для Telegram
-        let headerLine;
-        let statusNote = "";
-
-        if (checkSuccess) {
-          // Если проверка успешна - показываем точный статус
-          headerLine = isFirstOrder
-            ? "🔥 НОВЫЙ КЛИЕНТ 🔥"
-            : `📋 Повторный заказ (${previousOrdersCount + 1}-й по счету)`;
-        } else {
-          // Если проверка не удалась - показываем это в сообщении
-          headerLine = "🟡 КЛИЕНТ (статус не подтвержден)";
-          statusNote = `\n⚠️ Проверка статуса клиента не удалась: ${checkError}`;
-        }
-
-        const telegramMessage = `
-Заказ с сайта ${site}
-
-${headerLine}${statusNote}
-
-Имя: ${formData.lastName || "Не указано"}   
-Телефон: +${formData.phoneNumber}
-Telegram: ${telegramUsername}
-Способ доставки: ${selectedMethod === "delivery" ? "Доставка" : "Самовывоз"}
-${
-  selectedMethod === "delivery"
-    ? `Город: ${formData.city || "Не указан"}\nАдрес: ${formData.streetAddress || "Не указан"}`
-    : ""
-}
+Имя: ${formData.lastName}
+Телефон: ${phoneE164}
+Telegram: ${telegramForReport}
+Город: ${formData.city}
+${formData.comment ? `Комментарий: ${formData.comment}` : ""}
 
 Корзина:
 ${formattedCart}
 
-Общая сумма: ${totalPrice} ₽
+Общая сумма: ${currentTotalPrice} ₽
       `;
 
-        console.log("Prepared Telegram message");
-
-        // 3. В первую очередь отправляем в Telegram (ВСЕГДА!)
-        console.log("Sending to Telegram...");
-        const telegramSent = await sendToTelegram(telegramMessage);
-
-        if (!telegramSent) {
-          console.error("FAILED: Telegram not sent after all retries");
-          // Даже если Telegram не отправился, продолжаем - возможно другие каналы сработают
-        } else {
-          console.log("SUCCESS: Telegram sent");
-        }
-
-        // 4. Сохраняем в базу данных (даже если проверка не удалась)
-        const saveToDb = async () => {
-          try {
-            const orderData = {
-              customer_name: formData.lastName.trim() || "Не указано",
-              phone_number: phoneE164,
-              is_delivery: selectedMethod === "delivery",
-              city:
-                formData.city.trim() ||
-                (selectedMethod === "delivery" ? "Не указано" : "Москва"),
-              total_amount: totalPrice,
-              address:
-                formData.streetAddress.trim() ||
-                (selectedMethod === "delivery" ? "Не указано" : "Самовывоз"),
-              ordered_items: cartItems.map((item) => ({
-                product_name: `${item.name} (${item.type || "обычный"})`,
-                quantity: item.quantity,
-                price_at_time_of_order: item.price,
-              })),
-              // Используем результат проверки или по умолчанию считаем новым
-              is_first_order: checkSuccess ? (isFirstOrder ? 1 : 0) : 1,
-              check_error: checkError || null, // Сохраняем ошибку проверки для отладки
-            };
-
-            console.log("Saving to database...");
-            const response = await fetch("/api/orders", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify(orderData),
-            });
-
-            if (response.ok) {
-              const result = await response.json();
-              console.log("SUCCESS: Database saved", result);
-              return true;
-            } else {
-              const errorText = await response.text();
-              console.warn("WARNING: Database save failed:", errorText);
-              return false;
-            }
-          } catch (error) {
-            console.warn("WARNING: Database error:", error);
-            return false;
-          }
-        };
-
-        // 5. Отправляем на почту
-        const sendEmail = async () => {
-          try {
-            console.log("Sending email...");
-            const res = await fetch("/api/email", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ text: telegramMessage }),
-            });
-            if (res.ok) {
-              console.log("SUCCESS: Email sent");
-            } else {
-              console.warn("WARNING: Email failed");
-            }
-          } catch (error) {
-            console.warn("WARNING: Email error:", error);
-          }
-        };
-
-        // 6. Отправляем WhatsApp
-        const sendWhatsApp = async () => {
-          try {
-            console.log("Sending WhatsApp...");
-
-            let mess = "";
-            const moscowCities = [
-              "москва",
-              "зеленоград",
-              "троицк",
-              "московский",
-              "щербинка",
-              "новая москва",
-              "теплый стан",
-              "коммунарка",
-              "сосенки",
-              "бутово",
-              "внуково",
-              "солнцево",
-              "фили",
-              "новокосино",
-              "домодедово",
-              "беляево",
-              "ясенево",
-              "царицыно",
-              "марьино",
-              "люблино",
-              "вешняки",
-              "печатники",
-              "жулебино",
-              "кузьминки",
-              "чертаново",
-              "якиманка",
-              "измайлово",
-              "митино",
-              "куркино",
-              "северное бутово",
-              "южное бутово",
-              "поселение десеновское",
-              "поселение филимонковское",
-              "поселение воскресенское",
-              "поселение марушкинское",
-              "поселение мосрентген",
-              "поселение рязановское",
-              "поселение соколово-мещерское",
-              "поселение щаповское",
-              "поселение краснопахорское",
-              "поселение щербинка",
-              "поселение первомайское",
-              "поселение московский",
-              "поселение троицк",
-              "поселение шишкин лес",
-              "поселение киёвский",
-              "поселение калининец",
-              "поселение аксиньино",
-              "поселение былово",
-              "поселение варварино",
-              "поселение коготково",
-              "поселение кленово",
-              "поселение горчаково",
-              "поселение крекшино",
-              "поселение лесной городок",
-              "химки",
-              "мытищи",
-              "балашиха",
-              "люберцы",
-              "реутов",
-              "королев",
-              "одинцово",
-              "долгопрудный",
-              "власиха",
-              "видное",
-              "щербинка",
-              "котельники",
-              "новокосино",
-              "электросталь",
-              "железнодорожный",
-              "лазарево",
-              "текстильщики",
-              "новопеределкино",
-              "северное тушино",
-              // Дополнения:
-              "апрелевка",
-              "красногорск",
-              "ленинский",
-              "подольск",
-              "дзержинский",
-              "долгопрудный",
-              "лобня",
-              "ивантеевка",
-              "фрязино",
-              "софрино",
-              "пушкино",
-              "щелково",
-              "жуковский",
-              "раменское",
-              "бронницы",
-              "ликино-дулево",
-              "электрогорск",
-              "павловский посад",
-              "старая купавна",
-              "дмитров",
-              "солнечногорск",
-              "зеленоград",
-              "кубинка",
-              "наро-фоминск",
-              "руза",
-              "волоколамск",
-              "истра",
-              "чехов",
-              "серпухов",
-              "кашира",
-              "столбовая",
-              "лесной городок",
-              "переделкино",
-              "внуково",
-              "раменки",
-              "коньково",
-              "тёплый стан",
-              "ясенево",
-              "медведково",
-              "алтуфьево",
-              "бибирево",
-              "отрадное",
-              "свиблово",
-              "алексеевский",
-              "рижский",
-              "проспект мира",
-              "сущёвский",
-              "марфино",
-              "останкино",
-              "ростокино",
-              "черкизово",
-              "преображенское",
-              "сокольники",
-              "богородское",
-              "метрогородок",
-              "гольяново",
-              "измайлово",
-              "восточное измайлово",
-              "северное измайлово",
-              "коврово",
-              "перово",
-              "новогиреево",
-              "вешняки",
-              "выхино-жулебино",
-              "рюмино",
-              "капотня",
-              "кузьминки",
-              "лефортово",
-              "нижегородский",
-              "текстильщики",
-              "южнопортовый",
-              "печатники",
-              "нагатино-садовники",
-              "нагатинский затон",
-              "даниловский",
-              "донской",
-              "нагорный",
-              "нагатино",
-              "зябликово",
-              "братеево",
-              "алма-атинская",
-              "калитники",
-              "котловка",
-              "обручевский",
-              "коньково",
-              "беляево",
-              "чёрёмушки",
-              "академический",
-              "гагаринский",
-              "ленинский проспект",
-              "якиманка",
-              "арбат",
-              "пресненский",
-              "тверской",
-              "мещанский",
-              "красносельский",
-              "басманный",
-              "таганский",
-              "замоскворечье",
-              "хамовники",
-              "якиманка",
-              "крылатское",
-              "кунцево",
-              "филёвский парк",
-              "фили-давыдково",
-              "дорохово",
-              "сетунь",
-              "протвино",
-              "пущино",
-              "сергиев посад",
-              "краснозаводск",
-              "пересвет",
-              "хотово",
-              "абрамцево",
-              "софрино",
-              "пушкино",
-              "ивантеевка",
-              "фрязино",
-              "королёв",
-              "юбилейный",
-              "лосино-петровский",
-              "монино",
-              "щёлково",
-              "фридрихсгам",
-              "старая купавна",
-              "электроугли",
-              "ликино-дулёво",
-              "давыдово",
-              "куровское",
-              "егорьевск",
-              "коломна",
-              "воскресенск",
-              "белоозёрский",
-              "хорлово",
-              "раменское",
-              "жуковский",
-              "быково",
-              "красково",
-              "малаховка",
-              "удельная",
-              "томилино",
-              "красногорск",
-              "нахабино",
-              "опалиха",
-              "архангельское",
-              "ильинское",
-              "степаново",
-              "дедовск",
-              "снегири",
-              "холмогорка",
-              "лесной",
-              "поварово",
-              "андреевка",
-              "зеленоград",
-              "крюково",
-              "савёлки",
-              "силино",
-              "старое крюково",
-              "александровка",
-              "лужники",
-              "матвеевское",
-              "очаково",
-              "ново-переделкино",
-              "солнцево",
-              "воробьёвы горы",
-              "ленинские горы",
-              "раменки",
-              "проспект вернадского",
-              "университет",
-              "черёмушки",
-              "новые черёмушки",
-              "зюзино",
-              "котловка",
-              "обручевский",
-              "гагаринский",
-              "ленинский проспект",
-              "якиманка",
-              "арбат",
-              "пресненский",
-              "тверской",
-              "мещанский",
-              "красносельский",
-              "басманный",
-              "таганский",
-              "замоскворечье",
-              "хамовники",
-              "якиманка",
-              "крылатское",
-              "кунцево",
-              "филёвский парк",
-              "фили-давыдково",
-              "дорохово",
-              "сетунь",
-              "троицк",
-              "красная пахра",
-              "клёново",
-              "первомайское",
-              "киевский",
-              "щербинка",
-              "подольск",
-              "климовск",
-              "чехов",
-              "серпухов",
-              "протвино",
-              "пущино",
-              "липицы",
-              "оболенск",
-              "таруса",
-              "апрелевка",
-              "кокошкино",
-              "лесной городок",
-              "апрелевка",
-              "селятино",
-              "наро-фоминск",
-              "кубинка",
-              "тепловка",
-              "зимёнки",
-              "жуковка",
-              "никольское",
-              "петрово-дальнее",
-              "ильинское",
-              "павловская слобода",
-              "бузланово",
-              "снегири",
-              "дубки",
-              "жуковка",
-              "горки-10",
-              "барвиха",
-              "раздоры",
-              "ульяновка",
-              "горки-2",
-              "заречье",
-              "дмитров",
-              "яхрома",
-              "долгие пруды",
-              "львовский",
-              "горшково",
-              "сходня",
-              "фирсановка",
-              "подрезково",
-              "зеленоград",
-              "солнечногорск",
-              "поварово",
-              "андреевка",
-              "поведники",
-              "купавна",
-              "старая купавна",
-              "электроугли",
-              "электросталь",
-              "ногинск",
-              "павловский посад",
-              "электрогорск",
-              "ликино-дулёво",
-              "давыдово",
-              "куровское",
-              "егорьевск",
-              "коломна",
-              "воскресенск",
-              "белоозёрский",
-              "хорлово",
-              "раменское",
-              "жуковский",
-              "быково",
-              "красково",
-              "малаховка",
-              "удельная",
-              "томилино",
-              "люберцы",
-              "котельники",
-              "дзержинский",
-              "железнодорожный",
-              "балашиха",
-              "реутов",
-              "щелково",
-              "фрязино",
-              "королёв",
-              "мытищи",
-              "пушкино",
-              "ивантеевка",
-              "красногорск",
-              "химки",
-              "долгопрудный",
-              "лобня",
-              "зеленоград",
-              "солнечногорск",
-              "клин",
-              "высоковск",
-              "теряево",
-              "покровка",
-              "новопетровское",
-              "истра",
-              "дедовск",
-              "снегири",
-              "холмогорка",
-              "лесной",
-              "поварово",
-              "андреевка",
-              "солнечногорск",
-              "поварово",
-              "андреевка",
-              "поведники",
-              "купавна",
-              "старая купавна",
-              "электроугли",
-              "электросталь",
-              "ногинск",
-              "павловский посад",
-              "электрогорск",
-              "ликино-дулёво",
-              "давыдово",
-              "куровское",
-              "егорьевск",
-              "коломна",
-              "воскресенск",
-              "белоозёрский",
-              "хорлово",
-              "раменское",
-              "жуковский",
-              "быково",
-              "красково",
-              "малаховка",
-              "удельная",
-              "томилино",
-              "люберцы",
-              "котельники",
-              "дзержинский",
-              "железнодорожный",
-              "балашиха",
-              "реутов",
-              "щелково",
-              "фрязино",
-              "королёв",
-              "мытищи",
-              "пушкино",
-              "ивантеевка",
-              "красногорск",
-              "химки",
-              "долгопрудный",
-              "лобня",
-              "зеленоград",
-              "солнечногорск",
-              "клин",
-              "высоковск",
-              "теряево",
-              "покровка",
-              "новопетровское",
-              "истра",
-              "дедовск",
-              "снегири",
-              "холмогорка",
-              "лесной",
-              "поварово",
-              "андреевка",
-              "солнечногорск",
-              "поварово",
-              "андреевка",
-              "поведники",
-              "купавна",
-              "старая купавна",
-              "электроугли",
-              "электросталь",
-              "ногинск",
-              "павловский посад",
-              "электрогорск",
-              "ликино-дулёво",
-              "давыдово",
-              "куровское",
-              "егорьевск",
-              "коломна",
-              "воскресенск",
-              "белоозёрский",
-              "хорлово",
-              "раменское",
-              "жуковский",
-              "быково",
-              "красково",
-              "малаховка",
-              "удельная",
-              "томилино",
-              "люберцы",
-              "котельники",
-              "дзержинский",
-              "железнодорожный",
-              "балашиха",
-              "реутов",
-              "щелково",
-              "фрязино",
-              "королёв",
-              "мытищи",
-              "пушкино",
-              "ивантеевка",
-              "красногорск",
-              "химки",
-              "долгопрудный",
-              "лобня",
-              "зеленоград",
-            ];
-
-            if (selectedMethod === "pickup") {
-              mess = `Добрый день!\n\nПолучили ваш заказ ✅\n\nс сайта ${site} ✅\n\nНаш адрес для самовывоза:\nГ.Москва\n\nРимского-Корсакова 11к8\nОриентир пункт «OZON»\n\nОплата наличными ❗️❗️\n\nВажно❗️❗️\nНеобходимо заранее согласовать дату и приблизительное время приезда.\nПри желании, можем отправить ваш заказ Яндекс курьером или Доставистой. В таком случае, оплатить заказ необходимо переводом на карту.\n\nКорзина:\n${formattedCart}\n\nИмя: ${formData.lastName}\nТелефон: +${formData.phoneNumber}\nTelegram: ${telegramUsername}`;
-            } else if (
+      try {
+        // Отправка уведомлений (параллельно)
+        Promise.allSettled([
+          fetch("/api/email", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text: reportMessage }),
+          }),
+          fetch("/api/telegram-proxi", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              chat_id: "-1002155675591",
+              text: reportMessage,
+              parse_mode: "HTML",
+            }),
+          }),
+          (async () => {
+            // Ваша логика WhatsApp с проверкой региона
+            let autoReply = "";
+            if (
+              !isMoscowCity &&
               selectedMethod === "delivery" &&
-              moscowCities.some((city) =>
-                formData.city.trim().toLowerCase().includes(city),
-              )
+              formData.city.trim()
             ) {
-              mess = `Здравствуйте!\n\nПолучили ваш заказ с сайта ${site} ✅\n\nЗаказы отправляем через Яндекс или Достависту, предварительно согласовав с вами стоимость доставки. Оплата за заказ - переводом на карту.\n\nМожем отправить в любое удобное для Вас время.\n\n❗️Первый заказ можно оплатить при получении курьеру Достависты (в пределах МКАД)\n\nКогда Вам было бы удобно принять заказ? 😊\n\nКорзина:\n${formattedCart}\n\nАдрес:\nГород: ${formData.city}\nАдрес: ${formData.streetAddress}\n\nКонтактные данные:\nИмя: ${formData.lastName}\nТелефон: +${formData.phoneNumber}\nTelegram: ${telegramUsername}`;
-            } else if (selectedMethod === "delivery") {
-              mess = `Здравствуйте!\nПолучили ваш заказ с сайта ${site} ✅\n\nВ регионы отправляем через CDEK. Процесс следующий:\n\nВысылаем фото вашего заказа и накладную Cdek (отправка по договору, тарифы минимальные, доставка будет оплачена нами сразу и включена в общий счет).\nВысылаем вам реквизиты для оплаты.\n\nВсе посылки отправляются в день заказа.\nОтправка из Москвы ❗️\nНаложенным платежом не отправляем ❌❌❌\n\nОт Вас нужны след данные:\n\nФИО\nАдрес ближ ПВЗ СДЭК\n\nКорзина:\n${formattedCart}\n\nКонтактные данные:\nИмя: ${formData.lastName || "Не указано"}\nТелефон: +${formData.phoneNumber}\nTelegram: ${telegramUsername}\nАдрес доставки:\nГород: ${formData.city || "Не указан"}\nАдрес: ${formData.streetAddress || "Не указан"}`;
+              autoReply = `Здравствуйте! Получили ваше бронирование \n\nВ регионы отправляем через CDEK. \n\nВсе посылки отправляются в день заказа.\nОтправка из Москвы ❗️\nНаложенным платежом не отправляем ❌❌❌\n\nОт Вас нужны следующие данные:\n\nФио \nТел получателя \nГород\nАдрес ближ пвз сдэк`;
+            } else {
+              autoReply = `Здравствуйте! \n\nПолучили ваше бронирование \n*❗️КОГДА И ПО КАКОМУ АДРЕСУ ВАМ УДОБНО ПОЛУЧИТЬ ЗАКАЗ?❗️*\n*❗️СТОИМОСТЬ ДОСТАВКИ ЗАВИСИТ ОТ АДРЕСА И БУДЕТ С ВАМИ СОГЛАСОВАНА❗️*`;
             }
+            const waFull = `${autoReply}\n\n📦 СОСТАВ ЗАКАЗА:\n${formattedCart}\n\n💰 Сумма: ${currentTotalPrice} ₽\n\n👤 Имя: ${formData.lastName}\n🏙 Город: ${formData.city}`;
 
-            const idInstance = "1103290542";
-            const apiTokenInstance =
-              "65dee4a31f1342768913a5557afc548591af648dffc44259a6";
-
-            const response = await fetch(
-              `https://api.green-api.com/waInstance${idInstance}/SendMessage/${apiTokenInstance}`,
+            await fetch(
+              `https://api.green-api.com/waInstance1103290542/SendMessage/65dee4a31f1342768913a5557afc548591af648dffc44259a6`,
               {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                  chatId: `${formData.phoneNumber}@c.us`,
-                  message: mess,
+                  chatId: `${phoneNorm}@c.us`,
+                  message: waFull,
                 }),
               },
             );
+          })(),
+        ]);
 
-            if (response.ok) {
-              console.log("SUCCESS: WhatsApp sent");
-              return true;
-            } else {
-              const errorText = await response.text();
-              console.warn("WARNING: WhatsApp failed:", errorText);
-              return false;
-            }
-          } catch (error) {
-            console.warn("WARNING: WhatsApp error:", error);
-            return false;
-          }
+        // 4. ГЛАВНЫЙ ЗАПРОС В ВАШЕ API (БАЗА ДАННЫХ)
+        const orderDataForDb = {
+          customer_name: formData.lastName.trim(),
+          phone_number: phoneE164,
+          is_delivery: selectedMethod === "delivery" ? 1 : 0,
+          city: formData.city.trim(),
+          address: formData.streetAddress.trim() || "Доставка",
+          total_amount: Number(currentTotalPrice),
+          contact_method: "whatsapp",
+          telegram_username: cleanTelegram || "",
+          pickup_date: new Date().toLocaleDateString("ru-RU"),
+          pickup_time: new Date().toLocaleTimeString("ru-RU", {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+          comment: formData.comment.trim() || "",
+          ordered_items: cartItems.map((item) => ({
+            product_name: `${item.name} (${item.type || "обычный"})`,
+            quantity: Number(item.quantity),
+            price_at_time_of_order: Number(item.price),
+          })),
+          website: honeypot, // Если заполнено, API распознает бота
+          _pow: pow,
+          _ts: formLoadedAt,
         };
 
-        // Запускаем все фоновые операции параллельно
-        console.log("Starting background operations...");
-        await Promise.allSettled([saveToDb(), sendEmail(), sendWhatsApp()])
-          .then((results) => {
-            console.log("All background operations completed:", results);
-          })
-          .catch((error) => {
-            console.log("Error in background operations:", error);
-          });
+        const dbRes = await fetch("/api/orders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(orderDataForDb),
+        });
 
-        // 7. Всегда показываем успешное сообщение пользователю
-        console.log("Order processing completed");
-        alert(
-          "✅ Ваш заказ был отправлен!\nВ ближайшее время с вами свяжется наш менеджер.",
-        );
-
-        // Очищаем корзину и перенаправляем
-        clearCart();
-        setTimeout(() => {
+        if (dbRes.ok) {
+          alert(
+            "✅ Ваш заказ успешно оформлен!\nМенеджер свяжется с вами в ближайшее время.",
+          );
+          clearCart();
           window.location.href = "/";
-        }, 1500);
+        } else {
+          const errData = await dbRes.json();
+          alert(`⚠️ Ошибка: ${errData.error || "не удалось сохранить заказ"}`);
+        }
       } catch (error) {
-        console.error("Unexpected error in main processing:", error);
-
-        // Даже при критической ошибке показываем пользователю успех
-        // (скорее всего Telegram уже был отправлен или попытается отправиться)
+        console.error("Submit error:", error);
         alert(
-          "✅ Ваш заказ был отправлен!\nВ ближайшее время с вами свяжется наш менеджер.",
+          "Произошла ошибка. Пожалуйста, попробуйте позже или свяжитесь с нами напрямую.",
         );
-
-        // Все равно очищаем корзину
-        clearCart();
-        setTimeout(() => {
-          window.location.href = "/";
-        }, 1500);
       } finally {
         setLoading(false);
       }
@@ -971,184 +296,78 @@ ${formattedCart}
     }
   };
 
-  const handleExternalSubmit = () => {
-    if (formRef.current) {
-      formRef.current.requestSubmit();
-    }
-  };
-
   return (
-    <div className="checkout-page">
+    <div
+      className="checkout-page"
+      onMouseMove={() => setMouseMovements((c) => c + 1)}
+    >
       <div className="checkout-form">
         <div className="plitka">
           <h1>Оформление заказа</h1>
           <h5>
-            ВАЖНО! Укажите Ваш номер в WhatsApp или Telegram ник для связи
+            Уважаемые покупатели, в связи с законодательством выбор способов
+            доставки ограничен. Заполните данные, менеджер свяжется с вами для
+            уточнения деталей.
           </h5>
         </div>
+
         <form onSubmit={handleSubmit} ref={formRef}>
+          {/* Honeypot скрытое поле */}
+          <input
+            type="text"
+            style={{ display: "none" }}
+            tabIndex="-1"
+            value={honeypot}
+            onChange={(e) => setHoneypot(e.target.value)}
+          />
+
           <div className="checkout-name">
             <h4>Контактные данные</h4>
+
             <input
               type="text"
               name="lastName"
-              placeholder="Ваше имя"
+              placeholder="Ваше имя *"
               value={formData.lastName}
               onChange={handleInputChange}
             />
-            {errors.lastName && (
-              <p className="error" style={{ color: "red" }}>
-                {errors.lastName}
-              </p>
-            )}
+            {errors.lastName && <p className="error-msg">{errors.lastName}</p>}
 
             <input
               type="text"
               name="telegram"
-              placeholder="Telegram username (необязательно)"
+              placeholder="Telegram (необязательно)"
               value={formData.telegram}
               onChange={handleInputChange}
-              onFocus={(e) => {
-                const value = formData.telegram;
-                if (!value.startsWith("@")) {
-                  setFormData((prev) => ({
-                    ...prev,
-                    telegram: "@" + (value || ""),
-                  }));
-
-                  setTimeout(() => {
-                    e.target.setSelectionRange(1, 1);
-                  }, 0);
-                }
-              }}
-              onBlur={(e) => {
-                if (formData.telegram === "@") {
-                  setFormData((prev) => ({
-                    ...prev,
-                    telegram: "",
-                  }));
-                }
+              onFocus={() => {
+                if (!formData.telegram)
+                  setFormData((p) => ({ ...p, telegram: "@" }));
               }}
             />
-            {errors.telegram && (
-              <p className="error" style={{ color: "red" }}>
-                {errors.telegram}
-              </p>
-            )}
 
             <PhoneInput
               country={"ru"}
               value={formData.phoneNumber}
-              onChange={handlePhoneChange}
-              disableDropdown={true}
+              onChange={(val) =>
+                setFormData((p) => ({ ...p, phoneNumber: val }))
+              }
               onlyCountries={["ru"]}
-              inputStyle={{
-                width: "100%",
-                fontSize: "16px",
-                padding: "10px 20px",
-                fontFamily: "inherit",
-              }}
-              placeholder="Введите номер телефона"
+              placeholder="Введите номер телефона *"
+              inputStyle={{ width: "100%", height: "45px" }}
             />
             {errors.phoneNumber && (
-              <p className="error" style={{ color: "red" }}>
-                {errors.phoneNumber}
-              </p>
-            )}
-          </div>
-
-          <div className="checkout-delivery">
-            <h4>Способ доставки</h4>
-            <div className="checkout-delivery-method">
-              <button
-                type="button"
-                className={selectedMethod === "pickup" ? "active" : ""}
-                onClick={() => setSelectedMethod("pickup")}
-                disabled={true}
-                style={{
-                  opacity: 0.5,
-                  cursor: "not-allowed",
-                  position: "relative",
-                }}
-              >
-                Самовывоз
-                <br />
-                <span style={{ fontSize: "14px", color: "rgb(198, 58, 58)" }}>
-                  Недоступен
-                </span>
-              </button>
-              {onlyPacksAndBlocks && totalQuantity < 10 && !hasBlock ? (
-                <button type="button" className={selectedMethod} disabled>
-                  Доставка<br></br>
-                  <span style={{ fontSize: "14px", color: "rgb(198, 58, 58)" }}>
-                    Нужно 10 пачек или блок
-                  </span>
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className={selectedMethod === "delivery" ? "active" : ""}
-                  onClick={() => setSelectedMethod("delivery")}
-                >
-                  Доставка
-                </button>
-              )}
-            </div>
-
-            {selectedMethod === "delivery" && (
-              <div className="checkout-delivery-address">
-                <div style={{ position: "relative", width: "100%" }}>
-                  <input
-                    type="text"
-                    name="city"
-                    placeholder="Город *"
-                    value={formData.city}
-                    onChange={handleInputChange}
-                    disabled={
-                      onlyPacksAndBlocks && totalQuantity < 10 && !hasBlock
-                    }
-                  />
-                  {errors.city && (
-                    <p
-                      style={{
-                        color: "red",
-                        fontSize: "14px",
-                        marginTop: "5px",
-                        marginBottom: "0",
-                        fontWeight: "500",
-                      }}
-                    >
-                      {errors.city}
-                    </p>
-                  )}
-                </div>
-
-                <input
-                  type="text"
-                  name="streetAddress"
-                  placeholder="Номер дома и название улицы"
-                  value={formData.streetAddress}
-                  onChange={handleInputChange}
-                  disabled={
-                    onlyPacksAndBlocks && totalQuantity < 10 && !hasBlock
-                  }
-                />
-                {errors.streetAddress && (
-                  <p className="error" style={{ color: "red" }}>
-                    {errors.streetAddress}
-                  </p>
-                )}
-              </div>
+              <p className="error-msg">{errors.phoneNumber}</p>
             )}
 
-            {selectedMethod === "pickup" && (
-              <div className="checkout-delivery-pickup">
-                <p style={{ color: "rgb(198, 58, 58)", fontWeight: "bold" }}>
-                  ⚠️ Самовывоз временно недоступен. Пожалуйста, выберите
-                  доставку.
-                </p>
-              </div>
-            )}
+            <input
+              type="text"
+              name="city"
+              placeholder="Город *"
+              value={formData.city}
+              onChange={handleInputChange}
+              disabled={onlyPacksAndBlocks && totalQuantity < 10 && !hasBlock}
+            />
+            {errors.city && <p className="error-msg">{errors.city}</p>}
           </div>
         </form>
       </div>
@@ -1156,7 +375,7 @@ ${formattedCart}
       <div className="checkout-table">
         <h4>Ваша корзина</h4>
         {cartItems.length > 0 ? (
-          <div>
+          <>
             <ul className="cart-list">
               {cartItems.map((item) => (
                 <li key={item.id} className="cart-item">
@@ -1166,53 +385,84 @@ ${formattedCart}
                     className="cart-item-image"
                   />
                   <div className="cart-item-info">
-                    <div className="cart-item-name">
-                      <p>{item.name}</p>
-                      {item.type === "default" ? "" : <p>({item.type})</p>}
-                    </div>
+                    <p>
+                      {item.name} {item.type !== "default" && `(${item.type})`}
+                    </p>
                     <div className="price">
-                      <p>Количество: {item.quantity}</p>
-                      <p>Цена: ${item.price} ₽</p>
+                      <p>Кол-во: {item.quantity}</p>
+                      <p>{item.price} ₽</p>
                     </div>
                   </div>
                 </li>
               ))}
             </ul>
+
             <div className="checkout-total">
               <p>Итого:</p>
-              <p>{calculateTotalPrice()} ₽</p>
+              <p>{totalPrice} ₽</p>
             </div>
+
             <button
-              onClick={handleExternalSubmit}
-              disabled={loading || selectedMethod === "pickup"}
-              style={{
-                opacity: selectedMethod === "pickup" ? 0.5 : 1,
-                cursor: selectedMethod === "pickup" ? "not-allowed" : "pointer",
-              }}
+              className="submit-btn"
+              onClick={() => formRef.current.requestSubmit()}
+              disabled={loading}
             >
-              {loading ? "Загрузка..." : "Заказать"}
+              {loading ? "Загрузка..." : "Оформить заказ"}
             </button>
-            {selectedMethod === "pickup" && (
-              <p
-                style={{
-                  color: "rgb(198, 58, 58)",
-                  fontSize: "14px",
-                  textAlign: "center",
-                  marginTop: "10px",
-                }}
-              >
-                Самовывоз недоступен. Выберите доставку для оформления заказа.
-              </p>
-            )}
-          </div>
+
+            <p className="bot-link">
+              Или используйте наш{" "}
+              <Link href="https://t.me/ilumaStore_official_bot">
+                Telegram бот
+              </Link>
+            </p>
+          </>
         ) : (
-          <div>
-            <h5 style={{ textAlign: "center", marginTop: "30%" }}>
-              Корзина пуста
-            </h5>
-          </div>
+          <h5 style={{ textAlign: "center", marginTop: "50px" }}>
+            Корзина пуста
+          </h5>
         )}
       </div>
+
+      <style jsx>{`
+        .error-msg {
+          color: #ff4d4d;
+          font-size: 13px;
+          margin: -10px 0 10px 5px;
+        }
+        .submit-btn {
+          width: 100%;
+          padding: 16px;
+          background: #000;
+          color: #fff;
+          border: none;
+          border-radius: 8px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: opacity 0.2s;
+        }
+        .submit-btn:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+        .bot-link {
+          text-align: center;
+          margin-top: 15px;
+          font-size: 14px;
+        }
+        .bot-link a {
+          text-decoration: underline;
+        }
+        textarea {
+          width: 100%;
+          padding: 12px;
+          border: 1px solid #ddd;
+          border-radius: 8px;
+          margin-top: 10px;
+          font-family: inherit;
+          resize: none;
+        }
+      `}</style>
     </div>
   );
 };

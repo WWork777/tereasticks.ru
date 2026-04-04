@@ -22,6 +22,17 @@ export default function ClientFilters({ items: initialItems }) {
     hit: null,
   });
 
+  // ✅ Добавляем состояние проверки возраста
+  const [isAgeVerified, setIsAgeVerified] = useState(false);
+
+  useEffect(() => {
+    const check = () =>
+      setIsAgeVerified(localStorage.getItem("ageVerified") === "true");
+    check();
+    window.addEventListener("ageVerified", check);
+    return () => window.removeEventListener("ageVerified", check);
+  }, []);
+
   const debouncedQuery = useDebounce(searchQuery, 1000);
 
   const fetchFilteredData = useCallback(async () => {
@@ -74,7 +85,9 @@ export default function ClientFilters({ items: initialItems }) {
     setSearchQuery("");
     setSortOrder("default");
   };
+
   if (error) return <p>{error}</p>;
+
   return (
     <>
       <IqosCategory
@@ -101,7 +114,13 @@ export default function ClientFilters({ items: initialItems }) {
             <div className="spinner"></div>
           </div>
         ) : (
-          <ProductGrid items={items} loading={loading} />
+          // ✅ Передаём состояние возраста в ProductGrid
+          <ProductGrid
+            items={items}
+            loading={loading}
+            isAgeVerified={isAgeVerified}
+            setIsAgeVerified={setIsAgeVerified}
+          />
         )}
       </div>
     </>
