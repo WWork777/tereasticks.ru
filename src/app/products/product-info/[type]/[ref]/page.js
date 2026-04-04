@@ -28,7 +28,7 @@ async function fetchItems(type, ref) {
   // Определить адрес в зависимости от среды
   const isProd = process.env.NODE_ENV === "production";
   const baseUrl = isProd
-    ? "http://localhost:3001" // Заменить на реальный IP контейнера
+    ? "http://localhost:3008" // Заменить на реальный IP контейнера
     : "http://localhost:3000";
 
   try {
